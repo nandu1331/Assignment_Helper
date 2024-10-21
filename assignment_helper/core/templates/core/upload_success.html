@@ -1,9 +1,27 @@
-<h2>PDF Uploaded Successfully!</h2>
-<h3>Extracted Questions:</h3>
-<ul>
-    {% for question in questions %}
-        <li>{{ question }}</li>
-    {% empty %}
-        <li>No questions found.</li>
-    {% endfor %}
-</ul>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Upload Successful</title>
+</head>
+<body>
+    <h1>Upload Successful</h1>
+    <h2>Extracted Questions:</h2>
+    <ul>
+        {% for question in questions %}
+            <li>{{ question }}</li>
+        {% endfor %}
+    </ul>
+
+    <h2>Generated Answers:</h2>
+    <ul>
+        {% for answer in answers %}
+            <li>{{ answer }}</li>
+        {% endfor %}
+    </ul>
+
+    <h2>Your PDF:</h2>
+    <a href="{{ pdf_file }}" download>Download Generated PDF</a>
+</body>
+</html>

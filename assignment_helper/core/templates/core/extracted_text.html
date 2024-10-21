@@ -1,0 +1,33 @@
+<!-- templates/core/extract_text.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Extracted Text</title>
+</head>
+<body>
+    <h1>Extracted Text</h1>
+    <pre>{{ extracted_text }}</pre>
+    <h2>Extracted Questions</h2>
+    <ul>
+        {% for question in questions %}
+            <li>{{ question }}</a></li>
+        {% endfor %}
+    </ul>
+
+    <h3>Ask a Question</h3>
+    <form action="{% url 'get_answers' %}" method="POST">
+        {% csrf_token %}
+        <input type="hidden" name="context" value="{{ extracted_text }}">
+        <label for="question">Select a Question:</label><br>
+        <select id="question" name="question">
+            {% for question in questions %}
+                <option value="{{ question }}">{{ question }}</option>
+            {% endfor %}
+        </select>
+        <br><br>
+        <input type="submit" value="Get Answer">
+    </form>
+    <a href="{% url 'upload_pdf' %}">Upload another PDF</a>
+</body>
+</html>
