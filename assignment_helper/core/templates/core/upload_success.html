@@ -1,1 +1,9 @@
 <h2>PDF Uploaded Successfully!</h2>
+<h3>Extracted Questions:</h3>
+<ul>
+    {% for question in questions %}
+        <li>{{ question }}</li>
+    {% empty %}
+        <li>No questions found.</li>
+    {% endfor %}
+</ul>
