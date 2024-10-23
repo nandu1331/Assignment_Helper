@@ -284,52 +284,92 @@ def get_cached_answers(questions):
             return None
     return answers
 
-
-def extract_text_from_pdf(pdf_file):
-    pdf_reader = PyPDF2.PdfReader(pdf_file)
-    extracted_text = ""
-    for page_num in range(len(pdf_reader.pages)):
-        page = pdf_reader.pages[page_num]
-        extracted_text += page.extract_text()
-    return extracted_text
-
+import pdfplumber
 import re
 import spacy
+from spacy.matcher import Matcher
+from spacy.tokens import Span
 
 # Load the English NLP model
 nlp = spacy.load("en_core_web_sm")
 
-def extract_questions(text):
-    # Preprocess the text to remove excessive noise
-    text = re.sub(r'\n+', '\n', text)  # Remove multiple new lines
+def extract_text_from_pdf(pdf_file):
+    extracted_text = ""
+    
+    with pdfplumber.open(pdf_file) as pdf:
+        for page in pdf.pages:
+            text = page.extract_text()
+            if text:
+                extracted_text += text + "\n"  # Add a newline for separation
+
+    return extracted_text
+
+def clean_extracted_text(text):
+    # Remove excessive whitespace and newlines
+    text = re.sub(r'\n+', ' ', text)  # Replace multiple newlines with a single space
     text = re.sub(r'\s+', ' ', text)   # Normalize whitespace
+    text = text.strip()  # Remove leading/trailing whitespace
+    return text
 
-    # Split text into sentences using spaCy
-    doc = nlp(text)
-    sentences = [sent.text.strip() for sent in doc.sents]
+import re
+from nltk.corpus import words
 
-    questions = []
+# Load English words list
+english_words = set(words.words())
+
+def is_valid_english_sentence(sentence):
+    # Tokenize the sentence into words
+    words_in_sentence = sentence.split()
+    
+    # Count how many valid English words are in the sentence
+    valid_words = [word for word in words_in_sentence if word.lower() in english_words]
+    
+    # Return True if the majority of the words in the sentence are valid English words
+    return len(valid_words) >= len(words_in_sentence) * 0.5  # At least 50% must be valid English words
+
+def extract_questions(text):
+    # Preprocess the text to reduce noise
+    text = re.sub(r'\n+', '\n', text)  # Normalize new lines to single breaks
+    text = re.sub(r'\s+', ' ', text)  # Normalize excessive whitespace
+    text = re.sub(r'[^\w\s\.\?\!\-]', '', text)  # Remove unnecessary special characters
+    text = re.sub(r'\b[L2]\d+\s[Cc][Oo]\d+\b', '', text)
+
+    # Split text into sentences based on common question delimiters (periods, question marks, etc.)
+    sentences = re.split(r'(?<!\w\.\w.)(?<=\.|\?|\!)\s+', text)
+
+    # Define enhanced question patterns for flexibility
     question_patterns = [
-        re.compile(r'^\d+\.'),  # Number followed by a period
-        re.compile(r'^[A-Za-z]+[.)]'),  # Letter followed by a period or closing parenthesis
-        re.compile(r'\?\s*$'),  # Sentences ending with a question mark
-        re.compile(r'^(?:What|How|Why|When|Where|Who|Is|Are|Do|Does|Did)\s', re.IGNORECASE)  # Common question starters
+        re.compile(r'^\d+\.\s'),  # Matches "1. ", "2. " (Numbered questions)
+        re.compile(r'^[A-Za-z]\.\s+'),  # Matches "A. ", "B. " (Lettered questions)
+        re.compile(r'^[A-Za-z]\)\s+'),  # Matches "A) ", "B) " (Lettered with parenthesis)
+        re.compile(r'\?\s*$'),  # Sentences ending in a question mark
+        re.compile(r'^(What|How|Why|When|Where|Who|Is|Are|Do|Does|Did|Can|Could|May|Might|Shall|Should|Explain|Describe|Identify|Compare|Discuss)\s+', re.IGNORECASE)  # Common question starters
     ]
 
+    questions = []
+
+    # Check each sentence for matching question patterns and valid English content
     for sentence in sentences:
-        # Check if the sentence matches any question pattern
+        sentence = sentence.strip()  # Ensure clean sentences
+        
+        # Skip sentences that don't have enough valid English words
+        if not is_valid_english_sentence(sentence):
+            continue
+        
+        # Check if the sentence matches any of the patterns
         if any(pattern.match(sentence) for pattern in question_patterns):
             questions.append(sentence)
+        else:
+            # Fallback for multiline questions: Look for blocks that might be part of longer questions
+            if re.match(r'^\d+[\.\)]\s+|^[A-Z][a-z]*[\.\)]\s+', sentence):
+                questions.append(sentence)
 
-    # Clean up any unnecessary lines that might be included, like metadata
-    cleaned_questions = []
-    for question in questions:
-        # Filter out metadata lines that don't belong to questions
-        if not re.search(r'Course Coordinator|Module Coordinator|Program Coordinator|HOD', question):
-            cleaned_questions.append(question)
-
-    return cleaned_questions
-
+            # Also, consider multi-line question markers
+            elif len(sentence.split()) > 5 and sentence[0].isupper():
+                # Sentences longer than 5 words that start with a capital letter can be considered questions
+                questions.append(sentence)
+    
+    return questions
 
 def get_answers_from_gemini(questions):
     try:
