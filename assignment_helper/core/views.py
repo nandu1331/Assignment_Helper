@@ -1,11 +1,12 @@
-from django.shortcuts import render
+from django.shortcuts import render, redirect, get_object_or_404
 from .forms import PDFUploadForm
 import google.generativeai as genai
 import os
 from fpdf import FPDF
 import PyPDF2
 import re
-from .models import APIResponse
+from .models import APIResponse, Document
+import google
 
 # Configure the Gemini API
 genai.configure(api_key=os.environ['API_KEY'])
@@ -19,31 +20,34 @@ class QuestionBankPDF(FPDF):
 
     def add_fonts(self):
         # Add Open Sans font (normal, bold, italic)
-        font_path = os.path.join(settings.BASE_DIR, 'core/fonts')  # Update this path
+        font_path = os.path.join(settings.BASE_DIR, 'core/fonts')  # Path to your fonts folder
         self.add_font('OpenSans', '', os.path.join(font_path, 'OpenSans-Regular.ttf'), uni=True)
         self.add_font('OpenSans', 'B', os.path.join(font_path, 'OpenSans-Bold.ttf'), uni=True)
         self.add_font('OpenSans', 'I', os.path.join(font_path, 'OpenSans-Italic.ttf'), uni=True)
 
     def header(self):
-        # Logo (optional)
+        # Header with institutional details and logo
         logo_path = os.path.join(settings.BASE_DIR, 'logo.png') 
         if os.path.exists(logo_path):
-            self.image(logo_path, 10, 8, 33)  # Adjust the path and size as necessary
-        self.set_font("OpenSans", 'B', 16)  # Use Open Sans for header
-        self.cell(0, 10, 'Question Bank', 0, 1, 'C')
+            self.image(logo_path, 10, 8, 33)  # Logo size and position
+        self.set_font("OpenSans", 'B', 12)  # Header font style
+        self.cell(0, 10, 'RNS INSTITUTE OF TECHNOLOGY', 0, 1, 'C')
+        self.cell(0, 10, 'Autonomous Institution Affiliated to VTU', 0, 1, 'C')
+        self.cell(0, 10, 'Assignment 2: CLOUD COMPUTING', 0, 1, 'C')
         self.ln(5)  # Space after header
 
     def footer(self):
         self.set_y(-15)
-        self.set_font("OpenSans", '', 10)  # Use Open Sans for footer
+        self.set_font("OpenSans", '', 10)  # Footer font style
         self.set_text_color(100, 100, 100)  # Grey color for footer
+
         self.cell(0, 10, f'Page {self.page_no()}', 0, 0, 'C')
 
     def chapter_title(self, num, title):
         self.set_font('OpenSans', 'B', 14)  # Bold for question titles
-        self.set_text_color(20, 20, 20)  # Dark blue color
+        self.set_text_color(20, 20, 20)  # Dark color for questions
         self.cell(0, 10, f'Question {num}:', 0, 1, 'L')
-        self.set_font('OpenSans', 'B', 12)  # Italic for question text
+        self.set_font('OpenSans', 'B', 12)  # Regular for question text
         self.multi_cell(0, 10, title)
         self.ln(4)
 
@@ -53,84 +57,222 @@ class QuestionBankPDF(FPDF):
         self.ln()
 
     def add_question(self, num, question, answer=None):
-        self.chapter_title(num, question)
+        self.chapter_title(num, question + '?')
         if answer:
-            self.set_font('OpenSans', '', 12)  # Italic for answers
-            self.set_text_color(30, 30, 30)  # Dark green color for answers
+            self.set_font('OpenSans', '', 12)  # Regular for answers
+            self.set_text_color(30, 30, 30)  # Dark grey for answers
             self.multi_cell(0, 10, f'Answer: {answer}')
             self.ln(5)
 
 def upload_pdf(request):
+    uploaded_files = Document.objects.all()
     if request.method == 'POST':
         form = PDFUploadForm(request.POST, request.FILES)
         if form.is_valid():
             pdf_file = request.FILES['pdf_file']
+            pdf_name = pdf_file.name
+            existing_document = Document.objects.filter(name=pdf_name).first()
+            if existing_document:
+                document = existing_document
+            else:
+                document = Document(name=pdf_file.name, file=pdf_file)
+                document.save()
+
             extracted_text = extract_text_from_pdf(pdf_file)
             questions = extract_questions(extracted_text)
 
-            # Check if the questions are cached, if yes, return the cached answers
-            cached_answers = get_cached_answers(questions)
-            if cached_answers:
-                answers = cached_answers
-            else:
-                answers = get_answers_from_gemini(questions)
-                store_api_responses(questions, answers)  # Store responses in the database
+            # Store questions in the session
+            request.session['questions'] = questions
+            request.session['document_id'] = document.id
 
-            formatted_data = clean_and_format_data(answers)
-            pdf_file_path = generate_question_bank_pdf(questions, formatted_data)  # Generate PDF
-            
+            # Render the success page with questions
             return render(request, 'core/upload_success.html', {
                 'questions': questions,
-                'answers': answers,
                 'extracted_text': extracted_text,
-                'pdf_file': pdf_file_path,
             })
     else:
         form = PDFUploadForm()
 
-    return render(request, 'core/upload_pdf.html', {'form': form})
+    return render(request, 'core/upload_pdf.html', {'form': form, 'uploaded_files': uploaded_files, })
+
+def delete_file(request, file_id):
+    document = get_object_or_404(Document, id=file_id)
+    file_path = document.file.path
+    if os.path.isfile(file_path):
+        os.remove(file_path)
+
+    answers_dir = os.path.join(settings.MEDIA_ROOT, 'answers')  # Path to the answers directory
+    answers_pdf_path = os.path.join(answers_dir, f"answers_{document.id}.pdf")  # Assuming the answers PDF is named in this format
+
+    # Check if the answers PDF exists and delete it
+    if os.path.isfile(answers_pdf_path):
+        os.remove(answers_pdf_path)
+
+
+    document.delete()
+    return redirect('upload_pdf')  # Redirect back to the upload page
+
+from django.http import FileResponse
+
+def download_file(request, file_id):
+    document = get_object_or_404(Document, id=file_id)
+    
+    # Check if the answers file exists
+    if document.answers:
+        file_path = document.answers.path
+        response = FileResponse(open(file_path, 'rb'), content_type='application/pdf')
+        response['Content-Disposition'] = f'attachment; filename="answers_{document.id}.pdf"'
+        return response
+    else:
+        # Check if there are questions and answers in the database
+        questions_and_answers = APIResponse.objects.filter(document=document)
+        
+        if not questions_and_answers.exists():
+            return redirect('upload_pdf')  # Or handle the error appropriately
+        
+        # Extract questions and answers
+        questions = [q.question for q in questions_and_answers]
+        answers = [a.answer for a in questions_and_answers]
+        
+        return generate_question_bank_pdf(questions, answers, document.id)
+
+def view_answers(request, file_id):
+    document = get_object_or_404(Document, id=file_id)
+    answers = document.api_responses.all()  # Assuming you have an answers model
+
+    # Prepare the questions and answers for rendering
+    questions = [response.question for response in answers]  # Extract questions from answers
+    formatted_answers = [response.answer for response in answers]  # Extract answers
+
+    pdf_file_path = os.path.join(settings.MEDIA_ROOT, f"answers/answers_{document.id}.pdf")
+    if not os.path.exists(pdf_file_path):
+        # Generate the PDF if it does not exist
+        pdf_file_path = generate_question_bank_pdf(questions, formatted_answers, document.id)
+    
+    return render(request, 'core/generate_answers.html', {
+        'document': document,  # Pass the document object to the template
+        'questions': questions,
+        'answers': formatted_answers,
+        'pdf_file_path': pdf_file_path,  # No PDF generated for viewing answers
+        'viewing_answers': True,  # Flag to indicate that this is a view answers page
+    })
+
+def generate_answers(request):
+    if request.method == 'POST':
+        # Retrieve the document ID from the session
+        document_id = request.session.get('document_id')
+        document = get_object_or_404(Document, id=document_id)
+
+        # Check if there are edited questions
+        edited_questions = request.POST.getlist('edited_questions')  # Get the list of edited questions from the form
+        if edited_questions:
+            # Generate answers only for the edited questions
+            answers = []
+            for question in edited_questions:
+                # Fetch answers for each edited question
+                cached_answer = get_cached_answers([question])
+                if cached_answer:
+                    answers.append(cached_answer)  # Assuming cached_answer returns a list
+                else:
+                    answer = get_answers_from_gemini([question])
+                    answers.append(answer)
+                    # Store the new answer in the database
+                    store_api_responses([question], [answer], document_id)
+
+            # Clean and format the answers
+            formatted_data = clean_and_format_data(answers)
+            # Pass the document_id to the PDF generation function
+            pdf_file_path = generate_question_bank_pdf(edited_questions, formatted_data, document_id)
+
+            return render(request, 'core/generate_answers.html', {
+                'questions': edited_questions,
+                'answers': formatted_data,
+                'pdf_file_path': pdf_file_path,
+                'viewing_answers': True,
+                'document': document,
+            })
+        else:
+            # Handle the case for generating answers for new questions
+            questions = request.POST.getlist('questions')  # Get the list of questions from the form
+
+            # Split the questions string back into a list if needed
+            questions = questions[0].split(',') if questions else []
+
+            cached_answers = get_cached_answers(questions)
+
+            if cached_answers:
+                answers = cached_answers
+            else:
+                answers = get_answers_from_gemini(questions)
+                answers = clean_and_format_data(answers)
+                store_api_responses(questions, answers, document_id)  # Store responses in the database
+
+            formatted_data = clean_and_format_data(answers)
+            # Pass the document_id to the PDF generation function
+            pdf_file_path = generate_question_bank_pdf(questions, formatted_data, document_id)
+
+            return render(request, 'core/generate_answers.html', {
+                'questions': questions,
+                'answers': formatted_data,
+                'pdf_file_path': pdf_file_path,
+                'viewing_answers': True,
+                'document': document,
+            })
+
+    return redirect('upload_pdf')  # Redirect to upload_pdf if not POST
 
 from django.conf import settings
 # Function to generate question bank-style PDF
-def generate_question_bank_pdf(questions, answers):
+def generate_question_bank_pdf(questions, answers, document_id):
+    # Define the media directory and answers directory
     media_dir = settings.MEDIA_ROOT
-    if not os.path.exists(media_dir):
-        os.makedirs(media_dir)
+    answers_dir = os.path.join(media_dir, "answers")
 
+    # Create the answers directory if it does not exist
+    if not os.path.exists(answers_dir):
+        os.makedirs(answers_dir)
+
+    # Create the PDF instance
     pdf = QuestionBankPDF()
     pdf.add_page()
 
-    # Title Page
-    pdf.set_font("OpenSans", '', 20)  # Use Open Sans for title
+    # Adding title and description to match the institutional style
+    pdf.set_font("OpenSans", 'B', 20)
     pdf.set_text_color(0, 51, 102)  # Dark blue for title
     pdf.cell(0, 20, 'University Question Bank', 0, 1, 'C')
     pdf.ln(10)
 
     # Subtitle or description
-    pdf.set_font("OpenSans", 'I', 14)  # Italic Open Sans
+    pdf.set_font("OpenSans", 'I', 14)
     pdf.set_text_color(100, 100, 100)  # Light grey
     pdf.cell(0, 10, 'A compilation of important questions for review', 0, 1, 'C')
     pdf.ln(20)
 
-    # Adding questions
-    pdf.set_fill_color(220, 220, 220)  # Light grey for background
-    pdf.set_font("OpenSans", '', 12)  # Regular font for questions
+    # Adding questions and answers in a structured format
+    pdf.set_fill_color(220, 220, 220)  # Light grey for question background
+    pdf.set_font("OpenSans", '', 12)
 
     for i, (question, answer) in enumerate(zip(questions, answers), start=1):
         pdf.add_question(i, question, answer)
 
-    # Save the PDF
-    pdf_output = os.path.join(media_dir, "question_bank.pdf")
+    # Save the PDF in the answers directory
+    pdf_output = os.path.join(answers_dir, f"answers_{document_id}.pdf")
     pdf.output(pdf_output)
 
-    return os.path.join(settings.MEDIA_URL, "question_bank.pdf")
+    # Update the document's answers field
+    document = Document.objects.get(id=document_id)
+    document.answers = f"answers/answers_{document_id}.pdf"
+    document.save()
+
+    # Return the file response for the generated PDF
+    return FileResponse(open(pdf_output, 'rb'), content_type='application/pdf')
 
 
 # Other helper functions (extract_text_from_pdf, extract_questions, etc.) remain unchanged
 
-def store_api_responses(questions, answers):
+def store_api_responses(questions, answers, document_id):
     for question, answer in zip(questions, answers):
-        APIResponse.objects.create(question=question, answer=answer)
+        APIResponse.objects.create(question=question, answer=answer, document_id=document_id)
 
 def get_cached_answers(questions):
     answers = []
@@ -151,41 +293,83 @@ def extract_text_from_pdf(pdf_file):
         extracted_text += page.extract_text()
     return extracted_text
 
+import re
+import spacy
+
+# Load the English NLP model
+nlp = spacy.load("en_core_web_sm")
+
 def extract_questions(text):
-    lines = text.splitlines()
+    # Preprocess the text to remove excessive noise
+    text = re.sub(r'\n+', '\n', text)  # Remove multiple new lines
+    text = re.sub(r'\s+', ' ', text)   # Normalize whitespace
+
+    # Split text into sentences using spaCy
+    doc = nlp(text)
+    sentences = [sent.text.strip() for sent in doc.sents]
+
     questions = []
+    question_patterns = [
+        re.compile(r'^\d+\.'),  # Number followed by a period
+        re.compile(r'^[A-Za-z]+[.)]'),  # Letter followed by a period or closing parenthesis
+        re.compile(r'\?\s*$'),  # Sentences ending with a question mark
+        re.compile(r'^(?:What|How|Why|When|Where|Who|Is|Are|Do|Does|Did)\s', re.IGNORECASE)  # Common question starters
+    ]
 
-    for line in lines:
-        line = line.strip()
-        
-        # Using regex to match patterns that are likely to represent questions
-        if re.match(r'^\d+\s+.*$', line):
-            question_match = re.search(r'^\d+\s+(.*?)(?=\s*RBT|\s*COs|$)', line)
-            if question_match:
-                question_text = question_match.group(1).strip()
-                if question_text:
-                    questions.append(question_text)
-        
-        if any(phrase in line for phrase in ['how', 'what', 'why', 'describe', 'explain']):
-            if line.endswith('?') or line.endswith('.'):
-                question_text = re.sub(r'^(Q\.?No\.?\s*\d*\s*)?', '', line)
-                question_text = question_text.strip()
-                if question_text:
-                    questions.append(question_text)
+    for sentence in sentences:
+        # Check if the sentence matches any question pattern
+        if any(pattern.match(sentence) for pattern in question_patterns):
+            questions.append(sentence)
 
-    # Remove duplicates while maintaining order
-    questions = list(dict.fromkeys(questions))
-    
-    return questions
+    # Clean up any unnecessary lines that might be included, like metadata
+    cleaned_questions = []
+    for question in questions:
+        # Filter out metadata lines that don't belong to questions
+        if not re.search(r'Course Coordinator|Module Coordinator|Program Coordinator|HOD', question):
+            cleaned_questions.append(question)
+
+    return cleaned_questions
+
 
 def get_answers_from_gemini(questions):
-    answers = []
-    model = genai.GenerativeModel("gemini-1.5-flash")
-    for question in questions:
-        response = model.generate_content(question)
-        answers.append(response.text.strip())
-    return answers
+    try:
+        answers = []
+        model = genai.GenerativeModel("gemini-1.5-flash")
+        for question in questions:
+            response = model.generate_content(question)
+            answers.append(response.text.strip())
+        return answers
+    except google.api_core.exceptions.InvalidArgument as api_error:
+        # Handle invalid API key error
+        print(f"API Key Invalid: {api_error}")
+        return 'API Key Invalid. Please check your credentials.'
+    except Exception as e:
+        # Catch other general exceptions
+        print(f"An error occurred: {e}")
+        return ''
+
+
+import re
 
 def clean_and_format_data(raw_data):
-    cleaned_data = [answer.strip() for answer in raw_data if answer.strip()]  # Clean whitespace
+    cleaned_data = []
+    
+    for answer in raw_data:
+        # Strip leading/trailing whitespace
+        answer = answer.strip()
+        
+        # Remove HTML tags (if any)
+        answer = re.sub(r'<.*?>', '', answer)
+        
+        # Replace multiple spaces with a single space
+        answer = re.sub(r'\s+', ' ', answer)
+        
+        # Remove any unwanted characters (optional: modify regex as needed)
+        answer = re.sub(r'[^a-zA-Z0-9,.!?\'" ]', '', answer)
+        
+        # Ensure the answer is not empty after cleaning
+        if answer:
+            cleaned_data.append(answer)
+    
     return cleaned_data
+

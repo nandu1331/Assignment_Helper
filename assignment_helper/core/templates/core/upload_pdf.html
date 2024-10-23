@@ -12,5 +12,26 @@
         {{ form.as_p }}
         <button type="submit">Upload</button>
     </form>
+
+    <h2>Uploaded PDF Files</h2>
+    <ul>
+        {% for file in uploaded_files %}
+            <li>
+                {{ file.name }} 
+                <form method="post" action="{% url 'delete_file' file.id %}" style="display:inline;">
+                    {% csrf_token %}
+                    <button type="submit">Delete</button>
+                </form>
+                <form method="get" action="{% url 'view_answers' file.id %}" style="display:inline;">
+                    <button type="submit">View Answers</button>
+                </form>
+                <form method="get" action="{% url 'download_file' file.id %}" style="display:inline;">
+                    <button type="submit">Download</button>
+                </form>
+            </li>
+        {% empty %}
+            <li>No files uploaded yet.</li>
+        {% endfor %}
+    </ul>
 </body>
 </html>

@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% if viewing_answers %}View Answers{% else %}Generate Answers{% endif %}</title>
+</head>
+<body>
+    <h1>{% if viewing_answers %}Answers for Uploaded PDF{% else %}Generate Answers{% endif %}</h1>
+
+    {% if viewing_answers %}
+        <p>Viewing answers for the uploaded document.</p>
+        <form method="post" action="{% url 'generate_answers' %}">
+            {% csrf_token %}
+            <h2>Edit Questions</h2>
+            <p>Modify the questions below:</p>
+            <ul>
+                {% for question in questions %}
+                    <li>
+                        <span class="question-text">{{ question }}</span>
+                        <input type="text" name="edited_questions" value="{{ question }}" style="display:none;" required>
+                        <button type="button" class="edit-button" onclick="toggleEdit(this)">Edit</button>
+                        <button type="submit" class="save-button" style="display:none;">Save</button>
+                    </li>
+                {% empty %}
+                    <li>No questions available.</li>
+                {% endfor %}
+            </ul>
+        </form>
+
+        <h2>Answers</h2>
+        <ul>
+            {% for answer in answers %}
+                <li>{{ answer }}</li>
+            {% empty %}
+                <li>No answers available.</li>
+            {% endfor %}
+        </ul>
+
+        <h2>Download Question Bank PDF</h2>
+        <form method="get" action="{% url 'download_file' document.id %}">
+            <button type="submit">Download Question Bank PDF</button>
+        </form>
+        <p>If the PDF does not exist, it will be generated upon clicking the button.</p>
+
+    {% else %}
+        <form method="post">
+            {% csrf_token %}
+            <h2>Generate Answers</h2>
+            <p>Provide the questions for which you want answers:</p>
+            <textarea name="questions" rows="5" cols="50">{{ questions|join:", " }}</textarea>
+            <button type="submit">Generate Answers</button>
+        </form>
+    {% endif %}
+
+    <script>
+        function toggleEdit(button) {
+            const listItem = button.parentElement;
+            const questionText = listItem.querySelector('.question-text');
+            const inputField = listItem.querySelector('input[type="text"]');
+            const saveButton = listItem.querySelector('.save-button');
+
+            // Toggle visibility of question text and input field
+            if (inputField.style.display === "none") {
+                questionText.style.display = "none"; // Hide the question text
+                inputField.style.display = "inline"; // Show the input field
+                saveButton.style.display = "inline"; // Show the save button
+                button.textContent = "Cancel"; // Change button text to "Cancel"
+            } else {
+                questionText.style.display = "inline"; // Show the question text
+                inputField.style.display = "none"; // Hide the input field
+                saveButton.style.display = "none"; // Hide the save button
+                button.textContent = "Edit"; // Change button text back to "Edit"
+            }
+        }
+    </script>
+</body>
+</html>

@@ -5,6 +5,10 @@ from django.conf.urls.static import static
 
 urlpatterns = [
     path('upload/', views.upload_pdf, name='upload_pdf'),
+    path('delete_file/<int:file_id>/', views.delete_file, name='delete_file'),
+    path('generate_answers/', views.generate_answers, name='generate_answers'),
+    path('view_answers/<int:file_id>/', views.view_answers, name='view_answers'),  # New URL pattern for viewing answers
+    path('download/<int:file_id>/', views.download_file, name='download_file'),
 ]
 
 if settings.DEBUG:
