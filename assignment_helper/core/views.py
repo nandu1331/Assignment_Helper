@@ -64,6 +64,9 @@ class QuestionBankPDF(FPDF):
             self.multi_cell(0, 10, f'Answer: {answer}')
             self.ln(5)
 
+def index(request):
+    return render(request, 'core/index.html')
+
 def upload_pdf(request):
     uploaded_files = Document.objects.all()
     if request.method == 'POST':

@@ -4,6 +4,7 @@ from django.conf import settings
 from django.conf.urls.static import static
 
 urlpatterns = [
+    path('', views.index, name='index'),
     path('upload/', views.upload_pdf, name='upload_pdf'),
     path('delete_file/<int:file_id>/', views.delete_file, name='delete_file'),
     path('generate_answers/', views.generate_answers, name='generate_answers'),

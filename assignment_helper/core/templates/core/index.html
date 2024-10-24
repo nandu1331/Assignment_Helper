@@ -1,0 +1,65 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <link rel="stylesheet" href="{% static 'core/css/index_styles.css' %}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400&display=swap" rel="stylesheet">
+    <style>
+        body {
+            display: flex;
+            background-image: url("{% static 'core/images/still-life-books-versus-technology.jpg' %}");
+            background-size: cover;
+            background-repeat: no-repeat;
+            flex-direction: row;
+            height: 100vh;
+            margin: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="main-body">
+        <div class="text">
+            <div class="main-text">
+                <h2>Transform PDFs into Solutions</h2>
+            </div>
+            <div class="sub-main-text">
+                <p>
+                    Say goodbye to hours of manual work! 
+                    
+                    Upload your PDF, and let our advanced AI extract questions, generate detailed answers, 
+                    and present them in a clean, downloadable 
+                    format.
+                    
+                    Your ultimate academic helper is here.
+                </p>  
+            </div>
+            <div class="get-started-button">
+                <a href="{% url 'upload_pdf' %}" class="get-start">Get Started</a>
+            </div>
+        </div>
+        <div class="footer">
+            <div class="footer-ele"><p>Download structured PDFs with solutions</p></div>
+            <div class="footer-ele"><p>AI-generated answers for academic queries</p></div>
+            <div class="footer-ele"><p>Enhance your study efficiency with AI</p></div>
+        </div>
+    </div>
+    <nav class="social-media">
+        <div class="media-icon">
+            <a href="https://facebook.com" target="_blank" class="social-link"><i class="fab fa-facebook-f"></i></a>
+        </div>
+        <div class="media-icon">
+            <a href="https://twitter.com" target="_blank" class="social-link"><i class="fab fa-twitter"></i></a>
+        </div>
+        <div class="media-icon">
+            <a href="https://instagram.com" target="_blank" class="social-link"><i class="fab fa-instagram"></i></a>
+        </div>
+        <div class="media-icon">
+            <a href="https://linkedin.com" target="_blank" class="social-link"><i class="fab fa-linkedin-in"></i></a>
+        </div>
+    </nav>
+</body>
+</html>
