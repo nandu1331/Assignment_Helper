@@ -150,15 +150,6 @@ table {
     background-color: #7C3AFF;
 }
 
-tbody tr:nth-child(odd) {
-    background-color: #141414; /* First color for odd rows */
-    color: white; /* Change text color for better contrast */
-}
-
-tbody tr:nth-child(even) {
-    background-color: #1B1B1B; /* Second color for even rows */
-    color: white; /* Change text color for better contrast */
-}
 
 td, th {
     padding: 15px;

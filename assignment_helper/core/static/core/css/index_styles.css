@@ -33,7 +33,7 @@ body {
     width: 30%;
     font-size: 120%;
     text-align: left;
-    font-family: 'Roboto', sans-serif;
+    font-family: 'Roboto', monospace;
 }
 .get-start {
     display: flex;
@@ -112,4 +112,147 @@ body {
 .social-link {
     color: inherit; /* Inherit color from .media-icon */
     text-decoration: none; /* Remove underline */
+}
+
+/* Media Queries */
+
+/* For devices with a maximum width of 1200px (Tablets and large phones) */
+@media (max-width: 1200px) {
+    .main-body {
+        width: 95%; /* Slightly wider on larger screens */
+    }
+    .text {
+        margin-left: 30px; /* Reduce left margin */
+    }
+    .main-text {
+        width: 70%; /* Increase width on smaller screens */
+        font-size: 200%; /* Reduce font size */
+    }
+    .sub-main-text {
+        width: 50%; /* Increase width on smaller screens */
+        font-size: 100%; /* Reduce font size */
+    }
+    .get-start {
+        width: 7.8%; /* Increase button width */
+    }
+    .footer {
+        margin-left: 50px; /* Reduce left margin */
+    }
+}
+
+/* For devices with a maximum width of 992px (Tablets) */
+@media (max-width: 992px) {
+    body {
+        flex-direction: column; /* Stack elements vertically */
+        margin: 10px; /* Reduce margin */
+    }
+    .main-body {
+        width: 100%; /* Full width */
+    }
+    .text {
+        margin-top: 5rem; /* Reduce top margin */
+        margin-left: 20px; /* Further reduce left margin */
+    }
+    .main-text {
+        font-size: 180%; /* Further reduce font size */
+    }
+    .sub-main-text {
+        font-size: 90%; /* Further reduce font size */
+    }
+    .get-start {
+        width: 9%; /* Increase button width */
+    }
+    .footer {
+        flex-direction: column; /* Stack footer elements vertically */
+        margin-left: 20px; /* Further reduce left margin */
+    }
+}
+
+/* For devices with a maximum width of 768px (Small tablets and large phones) */
+@media (max-width: 768px) {
+    body {
+        display: flex;
+        flex-direction: row;
+        margin: 5px; /* Reduce margin further */
+    }
+    .main-body {
+        display: flex;
+        flex-direction: column;
+        margin: 10px; /* Reduce margin */
+    }
+    .text {
+        margin-top: 3rem; /* Reduce top margin */
+        margin-left: 10px; /* Further reduce left margin */
+    }
+    .main-text {
+        font-size: 100%; /* Further reduce font size */
+        width: 100%; /* Full width */
+    }
+    .sub-main-text {
+        font-size: 80%; /* Further reduce font size */
+        width: 100%; /* Full width */
+    }
+    .get-start {
+        width: 11.5%; /* Increase button width */
+    }
+    .footer {
+        margin-top: 50px; /* Add more space on top */
+    }
+    .social-media {
+        display: flex;
+        flex-direction: row;
+        justify-content: space-between;
+    }
+}
+
+/* For devices with a maximum width of 576px (Mobile phones) */
+@media (max-width: 576px) {
+    body {
+        flex-direction: column; /* Stack elements vertically */
+        margin: 0; /* No margin */
+        background: scroll;
+        align-items: center;
+    }
+    .main-body {
+        display: flex;
+        flex-direction: column;
+        margin: 5px; /* Reduce margin */
+        align-items: center;
+    }
+    .text {
+        margin-top: 2rem; /* Reduce top margin */
+        margin-left: 5px; /* Further reduce left margin */
+    }
+    .main-text {
+        font-size: 150%; /* Further reduce font size */
+        text-align: center; /* Center align text */
+    }
+    .sub-main-text {
+        font-size: 110%; /* Further reduce font size */
+        text-align: center; /* Center align text */
+    }
+    .get-start {
+        margin-left: 40%;
+        width: 15%; /* Increase button width */
+        font-size: 14px; /* Smaller font size */
+        text-align: center;
+        text-decoration: dotted;
+    }
+    .get-started-button {
+        text-align: center;
+    }
+    .footer {
+        justify-content: center;
+        flex-direction: column; /* Stack footer elements vertically */
+        margin-left: 25%; /* No left margin */
+        margin-top: 20px; /* Add space on top */
+    }
+    .social-media {
+        display: flex;
+        flex-direction: row;
+        justify-content: space-between;
+        right: 10px; /* Adjust position */
+        top: 10%; /* Adjust position */
+        margin-right: 40%;
+    }
 }

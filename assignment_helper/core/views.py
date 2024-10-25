@@ -67,6 +67,10 @@ class QuestionBankPDF(FPDF):
 def index(request):
     return render(request, 'core/index.html')
 
+from pdf2image import convert_from_path
+from django.core.files.base import ContentFile
+from io import BytesIO
+
 def upload_pdf(request):
     uploaded_files = Document.objects.all()
     if request.method == 'POST':
@@ -80,6 +84,18 @@ def upload_pdf(request):
             else:
                 document = Document(name=pdf_file.name, file=pdf_file)
                 document.save()
+
+            # Convert the first page of the PDF to an image
+            images = convert_from_path(document.file.path, first_page=1, last_page=1)
+            if images:
+                # Use BytesIO to save the image
+                img_byte_arr = BytesIO()
+                images[0].save(img_byte_arr, format='PNG')  # Save as PNG
+                img_byte_arr.seek(0)  # Move to the beginning of the BytesIO buffer
+
+                preview_image_path = f'previews/preview_{document.id}.png'
+                image_file = ContentFile(img_byte_arr.read(), name=preview_image_path)
+                document.preview.save(preview_image_path, image_file, save=True)  # Save to the preview field
 
             extracted_text = extract_text_from_pdf(pdf_file)
             questions = extract_questions(extracted_text)
@@ -96,12 +112,14 @@ def upload_pdf(request):
     else:
         form = PDFUploadForm()
 
-    return render(request, 'core/upload_pdf.html', {'form': form, 'uploaded_files': uploaded_files, })
+    return render(request, 'core/upload_pdf.html', {'form': form, 'uploaded_files': uploaded_files})
 
 from django.http import JsonResponse
 from django.urls import reverse
 def saved_files(request):
-    return render(request, 'core/saved_files.html')
+    uploaded_files = Document.objects.all()
+    context = {'uploaded_files': uploaded_files}
+    return render(request, 'core/saved_files.html', context)
 
 def get_uploaded_files(request):
     files = Document.objects.all().order_by('-uploaded_at')

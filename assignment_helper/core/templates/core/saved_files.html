@@ -1,11 +1,90 @@
+{% load static %}
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Document</title>
+    <link rel="stylesheet" href="{% static 'core/css/saved_files.css' %}">
+    <style>
+        body {
+            background-image: url("{% static 'core/images/bg.jpg' %}");
+            background-size: cover;
+            background-repeat: no-repeat;
+            height: 100vh;
+        }
+    </style>
 </head>
 <body>
-    Comming soon....
+    <div class="main-container">
+        <div class="file-list">
+            <table class="table">
+                <thead class="table-head">
+                    <tr>
+                        <th>File name</th>
+                        <th>Uploaded at</th>
+                    </tr>
+                </thead>
+                <tbody class="table-body">
+                    {% for file in uploaded_files %}
+                        <tr class="file-row" 
+                            data-file-name="{{ file.name }}" 
+                            data-uploaded-at="{{ file.uploaded_at }}" 
+                            data-file-preview="{{ file.preview.url }}" 
+                            data-file-details="This is a sample detail for {{ file.name }}.">
+                            <td>{{ file.name }}</td>
+                            <td>{{ file.uploaded_at }}</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        <div class="file-details">
+            <div class="file-preview-img" id="filePreviewImg"></div>
+            <div class="file-details-and-edit">
+                <div class="file-text-details" id="fileTextDetails"></div>
+                <a href="{% url 'index' %}" class="edit-button">Edit</a>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.querySelectorAll('.file-row').forEach(row => {
+            row.addEventListener('click', function() {
+        // Remove inline styles from all rows
+                document.querySelectorAll('.file-row').forEach(r => {
+                    r.style.backgroundColor = ''; // Reset background color
+                    r.style.color = ''; // Reset text color
+                });
+        
+        // Set inline styles for the clicked row
+                this.style.backgroundColor = 'rgba(85, 9, 157, 0.7)'; // Change to your desired color
+                this.style.color = 'white'; // Ensure text is readable
+        
+        // Get file details from data attributes
+                const fileName = this.getAttribute('data-file-name');
+                const uploadedAt = this.getAttribute('data-uploaded-at');
+                const filePreview = this.getAttribute('data-file-preview');
+                const fileDetails = this.getAttribute('data-file-details');
+
+        // Update the file details section
+                document.getElementById('filePreviewImg').style.backgroundImage = `url(${filePreview})`;
+                document.getElementById('fileTextDetails').innerHTML = `
+                    <div class="file-detail-row">
+                        <div class="file-detail-label">File Name:</div>
+                        <div class="file-detail-value">${fileName}</div>
+                    </div>
+                    <div class="file-detail-row">
+                        <div class="file-detail-label">Uploaded At:</div>
+                        <div class="file-detail-value">${uploadedAt}</div>
+                    </div>
+                    <div class="file-detail-row">
+                        <div class="file-detail-label">Details:</div>
+                        <div class="file-detail-value">${fileDetails}</div>
+                    </div>
+                `;
+            });
+        });
+    </script>
 </body>
 </html>

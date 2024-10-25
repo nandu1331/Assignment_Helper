@@ -6,6 +6,7 @@ class Document(models.Model):
     file = models.FileField(upload_to='documents/')
     answers = models.FileField(upload_to='answers/', null=True, blank=True)
     uploaded_at = models.DateTimeField(auto_now_add=True)
+    preview = models.ImageField(upload_to='previews/', null=True, blank=True)
 
     def __str__(self):
         return self.name
