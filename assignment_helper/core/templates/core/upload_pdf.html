@@ -1,37 +1,156 @@
+{% load static %}
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Upload PDF</title>
+    <link rel="stylesheet" href="{% static 'core/css/file_upload.css' %}">
+    <title>Document</title>
+    <style>
+        body {
+            display: flex;
+            background-image: url("{% static 'core/images/bg.jpg' %}");
+            background-size: cover;
+            background-repeat: no-repeat;
+            height: 100vh;
+            flex-direction: row;
+            margin: 20px;
+            font-family: 'Roboto', monospace; /* added font family to body */
+        }
+    </style>
 </head>
 <body>
-    <h1>Upload PDF File</h1>
-    <form method="post" enctype="multipart/form-data">
-        {% csrf_token %}
-        {{ form.as_p }}
-        <button type="submit">Upload</button>
-    </form>
-
-    <h2>Uploaded PDF Files</h2>
-    <ul>
-        {% for file in uploaded_files %}
-            <li>
-                {{ file.name }} 
-                <form method="post" action="{% url 'delete_file' file.id %}" style="display:inline;">
+    <div class="main-container">
+        <div class="nav-bar">
+            <a href="{% url 'index' %}" class="nav-br-buttons">Home</a>
+            <a href="{% url 'saved_files' %}" class="nav-br-buttons">Your work</a>
+        </div>
+        <div class="media-upload">
+            <div class="media-upload-container">
+                <div class="text">
+                    <h3>Media Upload</h3>
+                    <p style="color: #bababa;">Upload your documents here</p>
+                </div>
+                <form method="post" enctype="multipart/form-data">
                     {% csrf_token %}
-                    <button type="submit">Delete</button>
+                    <div class="upload-area" id="upload-area">
+                        <div class="upload-icon"></div>
+                        <div class="upload-text">
+                            <p>
+                                Drag your file(s) to start uploading
+                            </p>
+                            <p id="file-name-display" style="text-align: center; color: #898989;">Select files</p>
+                            <input type="file" name="pdf_file" id="file-input" style="display: none;" required>
+                        </div>
+                        <div class="browse-button" id="browse-button">Browse</div>
+                    </div>
+                    <div class="button-container">
+                        <button type="submit" class="upload-button">Upload</button>
+                        <br>
+                        <div class="cancel-button" id="cancel-button">Cancel</div>
+                    </div>
                 </form>
-                <form method="get" action="{% url 'view_answers' file.id %}" style="display:inline;">
-                    <button type="submit">View Answers</button>
-                </form>
-                <form method="get" action="{% url 'download_file' file.id %}" style="display:inline;">
-                    <button type="submit">Download</button>
-                </form>
-            </li>
-        {% empty %}
-            <li>No files uploaded yet.</li>
-        {% endfor %}
-    </ul>
-</body>
+                
+            </div>
+        </div>
+        <!--<div class="stored-media">
+            <table id="file-table" style="width: 100%; border-collapse: collapse;">
+                <thead class="header-table">
+                    <tr style="color: white;">
+                        <th style="padding: 10px; text-align: center;">File Name</th>
+                        <th style="padding: 10px; text-align: center;">Uploaded At</th>
+                    </tr>
+                </thead>
+                <tbody id="file-list">
+                    <tr>
+                        <td colspan="2" style="text-align: center;">No files uploaded yet.</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div> -->
+    </div>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script>
+        function fetchUploadedFiles() {
+            $.ajax({
+                url: "{% url 'get_uploaded_files' %}",  // Replace with your actual URL
+                method: "GET",
+                success: function(data) {
+                    $('#file-list').empty();  // Clear the list
+                    if (data.length > 0) {
+                        data.forEach(function(file) {
+                            const formattedDate = formatDate(new Date(file.upload_time));
+                            $('#file-list').append(`
+                                <tr>
+                                    <td>${file.name}</td>
+                                        <td>
+                                            ${formattedDate}
+                                        </td>
+                                </tr>  
+                            `);
+                        });
+                    } else {
+                        $('#file-list').append('<li>No files uploaded yet.</li>');
+                    }
+                },
+                error: function() {
+                    alert('Error fetching files.');
+                }
+            });
+        }
+        function formatDate(date) {
+            const options = { day: '2-digit', month: '2-digit', year: '2-digit', weekday: 'long'};
+            return date.toLocaleDateString('en-GB', options) + ' ' + date.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+        }
+    
+        $(document).ready(function() {
+            fetchUploadedFiles();  // Fetch files when the page loads
+    
+            // Trigger file input when Browse button is clicked
+            $('#browse-button').on('click', function() {
+                $('#file-input').click();
+            });
+    
+            // Handle file selection from file input
+            $('#file-input').on('change', function() {
+                const fileName = $(this).val().split('\\').pop(); // Get the file name
+                if (fileName) {
+                    $('#file-name-display').text(fileName); // Update the text with the selected file name
+                }
+            });
+    
+            // Handle drag and drop events
+            const uploadArea = $('#upload-area');
+    
+            uploadArea.on('dragover', function(e) {
+                e.preventDefault(); // Prevent default drag behaviors
+                e.stopPropagation();
+                uploadArea.addClass('drag-over'); // Optional: Add a class to style the area when dragging
+            });
+    
+            uploadArea.on('dragleave', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                uploadArea.removeClass('drag-over'); // Optional: Remove the class when not dragging
+            });
+    
+            uploadArea.on('drop', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                uploadArea.removeClass('drag-over'); // Remove the drag-over class
+    
+                const files = e.originalEvent.dataTransfer.files; // Get the files from the drop event
+                if (files.length > 0) {
+                    $('#file-input')[0].files = files; // Set the files to the input
+                    $('#upload-area .upload-text p').text(files[0].name); // Update the text with the dropped file name
+                }
+            });
+
+            $('#cancel-button').on('click', function() {
+                $('#file-input').val('');
+                $('#file-name-display').text('No file selected')
+            });
+        });
+    </script>
+    </body>
 </html>

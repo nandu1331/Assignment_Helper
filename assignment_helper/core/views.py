@@ -98,6 +98,23 @@ def upload_pdf(request):
 
     return render(request, 'core/upload_pdf.html', {'form': form, 'uploaded_files': uploaded_files, })
 
+from django.http import JsonResponse
+from django.urls import reverse
+def saved_files(request):
+    return render(request, 'core/saved_files.html')
+
+def get_uploaded_files(request):
+    files = Document.objects.all().order_by('-uploaded_at')
+    file_list = [{
+        'id': file.id,
+        'name': file.name,
+        'upload_time': file.uploaded_at,
+        'delete_url': reverse('delete_file', args=[file.id]),
+        'view_answers_url': reverse('view_answers', args=[file.id]),
+        'download_url': reverse('download_file', args=[file.id]),
+    } for file in files]
+    return JsonResponse(file_list, safe=False)
+
 def delete_file(request, file_id):
     document = get_object_or_404(Document, id=file_id)
     file_path = document.file.path

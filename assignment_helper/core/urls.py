@@ -6,6 +6,8 @@ from django.conf.urls.static import static
 urlpatterns = [
     path('', views.index, name='index'),
     path('upload/', views.upload_pdf, name='upload_pdf'),
+    path('saved_files/', views.saved_files, name='saved_files'),
+    path('api/uploaded-files/', views.get_uploaded_files, name='get_uploaded_files'),
     path('delete_file/<int:file_id>/', views.delete_file, name='delete_file'),
     path('generate_answers/', views.generate_answers, name='generate_answers'),
     path('view_answers/<int:file_id>/', views.view_answers, name='view_answers'),  # New URL pattern for viewing answers
