@@ -1,27 +1,174 @@
-<!-- core/templates/core/upload_success.html -->
+{% load static %}
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Upload Successful</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <style>
+        body {
+            background-image: url("{% static 'core/images/bg.jpg' %}");
+            background-size: cover;
+            background-repeat: no-repeat;
+            height: 100vh;
+            color: white;
+        }
+        .main-container {
+            margin: 5%;
+            padding: 10px;
+            display: flex;
+            flex-direction: column;
+        }
+        .question-container {
+            background-color: rgba(255, 255, 255, 0.1);
+            border: 1px solid #ccc;
+            border-radius: 10px;
+            padding: 20px;
+            height: 60vh;
+            overflow-y: auto;
+            align-items: center;
+        }
+        .question-container h2 {
+            text-align: center;
+            position: sticky;
+            background-color: #7C3AFF;
+            padding: 10px 20px;
+            width: fit-content;
+            border-radius: 15px;
+            margin: auto;
+        }
+        .question-container li {
+            padding: 10px;
+            margin-left: 5%;
+        }
+        .button-container {
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            align-items: center;
+        }
+        .button {
+            text-decoration: none;
+            background-color:  #7C3AFF;
+            color: #fff;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: background-color 0.2s ease-in-out, transform 0.2s ease-in-out;
+        }
+        .button:hover {
+            background-color: #4c09d1;
+            transform: scale(1.1);
+        }
+        .editable {
+            border: 1px solid #7C3AFF;
+            border-radius: 5px;
+            padding: 2px;
+            background-color: rgba(48, 47, 47, 0.3);
+        }
+    </style>
 </head>
 <body>
-    <h1>Upload Successful</h1>
-    <h2>Extracted Text:</h2>
-    <p>{{ extracted_text }}</p>
-    <h2>Extracted Questions</h2>
-    <ul>
-        {% for question in questions %}
-            <li>{{ question }}</li>
-        {% endfor %}
-    </ul>
+    <div class="main-container">
+        <div class="question-container">
+            <h2>Extracted Questions</h2>
+            <ul id="questionList">
+                {% for question in questions %}
+                    <li id="question-{{ forloop.counter }}" contenteditable="false">{{ question }}</li>
+                {% endfor %}
+            </ul>
+        </div>
+        <div class="button-container">
+            <button class="button" id="editButton">Edit Questions</button>
+            <button class="button" id="generateAnswersButton">Generate Answers</button>
+            <button class="button"><a href="{% url 'upload_pdf' %}" style="text-decoration: none; color: white;">Upload Another PDF</a></button>
+        </div>
+        <div id="answersContainer"></div> <!-- Container to display generated answers -->
+    </div>
+    <script>
+        const editButton = document.getElementById('editButton');
+        const questionList = document.getElementById('questionList');
+        const generateAnswersButton = document.getElementById('generateAnswersButton');
+        const answersContainer = document.getElementById('answersContainer');
 
-    <form action="{% url 'generate_answers' %}" method="post">
-        {% csrf_token %}
-        <input type="hidden" name="questions" value="{{ questions|join:',' }}">
-        <button type="submit">Generate Answers</button>
-    </form>
+        editButton.addEventListener('click', () => {
+            const lis = questionList.querySelectorAll('li');
+            if (editButton.textContent === 'Edit Questions') {
+                editButton.textContent = 'Save';
+                lis.forEach((li) => {
+                    li.contentEditable = 'true';
+                    li.classList.add('editable');
+                });
+            } else {
+                editButton.textContent = 'Edit Questions';
+                lis.forEach((li) => {
+                    li.contentEditable = 'false';
+                    li.classList.remove('editable');
+                });
+                
+                const modifiedQuestions = Array.from(lis).map((li) => {
+                    return {
+                        id: li.id.replace('question-', ''), // Extract the ID without ' question-'
+                        text: li.textContent.trim() // Get the modified text and trim whitespace
+                    };
+                });
+                
+                // Send the modified questions to the server to save in the database
+                fetch("{% url 'update_questions' %}", {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': '{{ csrf_token }}'
+                    },
+                    body: JSON.stringify({ questions: modifiedQuestions })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.error) {
+                        answersContainer.innerHTML = `<p>Error: ${data.error}</p>`;
+                    } else {
+                        // Display a success message
+                        answersContainer.innerHTML = `<p>Questions saved successfully!</p>`;
+                    }
+                })
+                .catch(error => {
+                    answersContainer.innerHTML = `<p>Error occurred: ${error}</p>`;
+                });
+            }
+        });
 
-    <a href="{% url 'upload_pdf' %}">Upload another PDF</a>
+        generateAnswersButton.addEventListener('click', () => {
+    const lis = questionList.querySelectorAll('li');
+    const modifiedQuestions = Array.from(lis).map((li) => ({
+        id: li.id.replace('question-', ''),
+        text: li.textContent.trim()
+    }));
+
+    // Create a hidden form to submit the questions
+    const form = document.createElement('form');
+    form.method = 'POST';
+    form.action = "{% url 'generate_answers' %}";
+
+    // Add CSRF token
+    const csrfToken = document.createElement('input');
+    csrfToken.type = 'hidden';
+    csrfToken.name = 'csrfmiddlewaretoken';
+    csrfToken.value = '{{ csrf_token }}';
+    form.appendChild(csrfToken);
+
+    // Add questions to the form
+    const questionsInput = document.createElement('input');
+    questionsInput.type = 'hidden';
+    questionsInput.name = 'questions';
+    questionsInput.value = JSON.stringify(modifiedQuestions);
+    form.appendChild(questionsInput);
+
+    // Append the form to the body and submit
+    document.body.appendChild(form);
+    form.submit();
+});
+    </script>
 </body>
 </html>

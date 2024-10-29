@@ -13,61 +13,84 @@
             background-repeat: no-repeat;
             height: 100vh;
         }
+        .no-files-message {
+            text-align: center;
+            color: red;
+            font-size: 1.5em;
+            margin-top: 20%;
+        }
     </style>
 </head>
 <body>
+    <nav class="nav">
+        <a href="{% url 'index' %}">Home</a>
+        <a href="{% url 'upload_pdf' %}">Upload Files</a>
+        <a href="{% url 'saved_files' %}">Your Work</a>
+    </nav>
     <div class="main-container">
-        <div class="file-list">
-            <table class="table">
-                <thead class="table-head">
-                    <tr>
-                        <th>File name</th>
-                        <th>Uploaded at</th>
-                    </tr>
-                </thead>
-                <tbody class="table-body">
-                    {% for file in uploaded_files %}
-                        <tr class="file-row" 
-                            data-file-name="{{ file.name }}" 
-                            data-uploaded-at="{{ file.uploaded_at }}" 
-                            data-file-preview="{{ file.preview.url }}" 
-                            data-file-details="This is a sample detail for {{ file.name }}.">
-                            <td>{{ file.name }}</td>
-                            <td>{{ file.uploaded_at }}</td>
+        {% if uploaded_files %}
+        <div class="sub-container">
+            <div class="file-list">
+                <table class="table">
+                    <thead class="table-head">
+                        <tr>
+                            <th>File name</th>
+                            <th>Uploaded at</th>
                         </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
-        <div class="file-details">
-            <div class="file-preview-img" id="filePreviewImg"></div>
-            <div class="file-details-and-edit">
-                <div class="file-text-details" id="fileTextDetails"></div>
-                <a href="{% url 'index' %}" class="edit-button">Edit</a>
+                    </thead>
+                    <tbody class="table-body">
+                        {% for file in uploaded_files %}
+                            <tr class="file-row" 
+                                data-file-id="{{ file.id }}"
+                                data-file-name="{{ file.name }}" 
+                                data-uploaded-at="{{ file.uploaded_at }}" 
+                                data-file-preview="{{ file.preview.url }}" 
+                                data-file-details="This is a sample detail for {{ file.name }}.">
+                                <td>{{ file.name }}</td>
+                                <td>{{ file.uploaded_at }}</td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            <div class="file-details">
+                <div class="file-preview-img" id="filePreviewImg"></div>
+                <div class="file-details-and-edit">
+                    <div class="file-text-details" id="fileTextDetails"></div>
+                    <a href="#" class="edit-button">Edit</a>
+                    <a href="#" id="viewAnswersButton" class="edit-button">View</a>
+                </div>
             </div>
         </div>
+        {% else %}
+            <div class="no-files-message">
+                No files here to display. Start uploading files!
+            </div>
+        {% endif %}
     </div>
 
     <script>
         document.querySelectorAll('.file-row').forEach(row => {
             row.addEventListener('click', function() {
-        // Remove inline styles from all rows
+                // Remove inline styles from all rows
                 document.querySelectorAll('.file-row').forEach(r => {
                     r.style.backgroundColor = ''; // Reset background color
                     r.style.color = ''; // Reset text color
                 });
         
-        // Set inline styles for the clicked row
+                // Set inline styles for the clicked row
                 this.style.backgroundColor = 'rgba(85, 9, 157, 0.7)'; // Change to your desired color
                 this.style.color = 'white'; // Ensure text is readable
         
-        // Get file details from data attributes
+                // Get file details from data attributes
                 const fileName = this.getAttribute('data-file-name');
                 const uploadedAt = this.getAttribute('data-uploaded-at');
                 const filePreview = this.getAttribute('data-file-preview');
                 const fileDetails = this.getAttribute('data-file-details');
-
-        // Update the file details section
+                const fileId = this.getAttribute('data-file-id');
+                console.log('File ID:', fileId);
+        
+                // Update the file details section
                 document.getElementById('filePreviewImg').style.backgroundImage = `url(${filePreview})`;
                 document.getElementById('fileTextDetails').innerHTML = `
                     <div class="file-detail-row">
@@ -83,6 +106,7 @@
                         <div class="file-detail-value">${fileDetails}</div>
                     </div>
                 `;
+                document.getElementById('viewAnswersButton').href = "{% url 'view_answers' file_id=0 %}".replace('0', fileId);
             });
         });
     </script>

@@ -1,10 +1,38 @@
-
-.main-container {
-    margin: 5%;
+.nav {
     display: flex;
     flex-direction: row;
-    align-items: flex-start; /* Align items to the start */
+    justify-content: center;
+    padding: 15px;
+    background-color: rgba(0, 0, 0, 0.1);
+    gap: 20px;
+}
+.nav a {
+    background-color: #7C3AFF;
+    padding: 10px;
+    color: white;
+    text-decoration: none;
+    text-align: center;
+    border: none;
+    border-radius: 15px;
+    transition: background-color 0.2s ease-in-out;
+}
+.nav a:hover {
+    background-color: #480ebc;
+}
+.main-container {
+    margin: 2%;
+    display: flex;
+    flex-direction: column;
+    align-items: center; /* Align items to the start */
     justify-content: space-between;
+}
+.sub-container {
+    margin: 2%;
+    display: flex;
+    flex-direction: row;
+    align-items: flex-start;
+    justify-content: space-between;
+    width: 80%;
 }
 .file-list {
     height: 80vh;
@@ -107,9 +135,10 @@ tbody tr:nth-child(even) {
 }
 .file-details-and-edit {
     display: flex;
-    flex-direction: row;
-    justify-content: space-between;
+    flex-direction: row;    
+    gap: 10px;
 }
+
 .edit-button {
     background-color: #7C3AFF;
     border-radius: 20px;

@@ -1,12 +1,24 @@
+:root {
+    --primary-color: #7C3AFF;
+    --secondary-color: #6B5B9A;
+    --text-color: #ffffff;
+    --background-color: rgba(255, 255, 255, 0.1);
+    --footer-background: rgba(0, 0, 0, 0.5);
+    --button-hover-color: #480ebc;
+    --transition-speed: 0.3s;
+}
+
 body {
     display: flex;
-    background-image: url('.../images/still-life-books-versus-technology.jpg');
+    background-image: url('{% static "core/images/still-life-books-versus-technology.jpg" %}');
     background-size: cover;
     background-repeat: no-repeat;
     flex-direction: row;
     height: 100vh;
-    margin: 20px;
+    margin: 0;
+    font-family: 'Roboto', sans-serif;
 }
+
 .main-body {
     display: flex;
     margin: 20px;
@@ -16,46 +28,56 @@ body {
     height: 100vh;
     width: 90%;
 }
+
 .text {
     margin-top: 7rem;   
     margin-left: 50px;
+    animation: fadeIn 0.5s ease-in;
 }
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
 .main-text {
-    color: white;
+    color: var(--text-color);
     width: 50%;
-    font-size: 250%; 
+    font-size: 2.5em; 
     text-align: left; 
     font-family: 'Lato', sans-serif;    
 }
+
 .sub-main-text {
-    color: white;
+    color: var(--text-color);
     display: flexbox;
     width: 30%;
-    font-size: 120%;
+    font-size: 1.2em;
     text-align: left;
     font-family: 'Roboto', monospace;
 }
+
 .get-start {
     display: flex;
     background-color: white;
     color: black;
     border-radius: 20px;
     padding: 10px;
-    border-style: none;
-    transition: transform 0.2s ease-in-out, background-color 0.2s ease-in-out;
+    border: none;
+    transition: transform var(--transition-speed), background-color var(--transition-speed);
     align-items: center;
     cursor: pointer;
-    width: 5.9%;
+    width: 6%;
     text-decoration: none;
-    color: black;
     font-weight: 500;
     text-align: center;
 }
 
 .get-start:hover {
     transform: scale(1.1);
-    background-color: whitesmoke;
+    background-color: var(--button-hover-color);
 }
+
 .footer {
     position: relative;
     display: flex;
@@ -68,17 +90,20 @@ body {
     margin-left: 100px;
     margin-bottom: 5%;
 }
+
 .footer-ele {
-    color: white;
+    color: var(--text-color);
     position: relative; /* Position relative to allow absolute positioning of pseudo-elements */
     padding-left: 30px;
 }
+
 .footer-ele p {
-    font-weight: 50;
+    font-weight: 500;
     width: 70%;
     text-align: left;
     font-family: 'Roboto Mono', monospace;
 }
+
 .footer-ele::before {
     content: ""; /* Empty content for the pseudo-element */
     position: absolute; /* Position it absolutely within the footer-ele */
@@ -87,8 +112,9 @@ body {
     transform: translateY(-50%); /* Adjust for exact vertical centering */
     width: 5px; /* Width of the vertical bar */
     height: 55%; /* Height of the vertical bar */
-    background-color: white; /* Color of the vertical bar */
+    background-color: var(--text-color); /* Color of the vertical bar */
 }
+
 .social-media {
     position: absolute;
     display: flex;
@@ -100,15 +126,18 @@ body {
     justify-content: space-between;
     margin-right: 2%;
 }
+
 .media-icon {
     font-size: 24px;
-    color: white;
+    color: var(--text-color);
     padding-bottom: 100px;
-    transition: transform 0.2s ease-in-out;
+    transition: transform var(--transition-speed);
 }
+
 .media-icon:hover {
     transform: scale(1.1);
 }
+
 .social-link {
     color: inherit; /* Inherit color from .media-icon */
     text-decoration: none; /* Remove underline */
@@ -126,14 +155,14 @@ body {
     }
     .main-text {
         width: 70%; /* Increase width on smaller screens */
-        font-size: 200%; /* Reduce font size */
+        font-size: 2em; /* Reduce font size */
     }
     .sub-main-text {
         width: 50%; /* Increase width on smaller screens */
-        font-size: 100%; /* Reduce font size */
+        font-size: 1em; /* Reduce font size */
     }
     .get-start {
-        width: 7.8%; /* Increase button width */
+        width: 8%; /* Increase button width */
     }
     .footer {
         margin-left: 50px; /* Reduce left margin */
@@ -154,13 +183,13 @@ body {
         margin-left: 20px; /* Further reduce left margin */
     }
     .main-text {
-        font-size: 180%; /* Further reduce font size */
+        font-size: 1.8em; /* Further reduce font size */
     }
     .sub-main-text {
-        font-size: 90%; /* Further reduce font size */
+        font-size: 0.9em; /* Further reduce font size */
     }
     .get-start {
-        width: 9%; /* Increase button width */
+        width: 10%; /* Increase button width */
     }
     .footer {
         flex-direction: column; /* Stack footer elements vertically */
@@ -185,15 +214,15 @@ body {
         margin-left: 10px; /* Further reduce left margin */
     }
     .main-text {
-        font-size: 100%; /* Further reduce font size */
+        font-size: 1.5em; /* Further reduce font size */
         width: 100%; /* Full width */
     }
     .sub-main-text {
-        font-size: 80%; /* Further reduce font size */
+        font-size: 0.8em; /* Further reduce font size */
         width: 100%; /* Full width */
     }
     .get-start {
-        width: 11.5%; /* Increase button width */
+        width: 12.5%; /* Increase button width */
     }
     .footer {
         margin-top: 50px; /* Add more space on top */
@@ -224,11 +253,11 @@ body {
         margin-left: 5px; /* Further reduce left margin */
     }
     .main-text {
-        font-size: 150%; /* Further reduce font size */
+        font-size: 1.2em; /* Further reduce font size */
         text-align: center; /* Center align text */
     }
     .sub-main-text {
-        font-size: 110%; /* Further reduce font size */
+        font-size: 0.7em; /* Further reduce font size */
         text-align: center; /* Center align text */
     }
     .get-start {

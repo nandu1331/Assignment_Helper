@@ -8,15 +8,25 @@
     <title>Document</title>
     <style>
         body {
-            display: flex;
-            background-image: url("{% static 'core/images/bg.jpg' %}");
-            background-size: cover;
-            background-repeat: no-repeat;
-            height: 100vh;
-            flex-direction: row;
-            margin: 20px;
-            font-family: 'Roboto', monospace; /* added font family to body */
-        }
+    display: flex;
+    background-image: url("{% static 'core/images/bg.jpg' %}");
+    background-size: cover;
+    background-repeat: no-repeat;
+    height: 100vh;
+    flex-direction: row;
+    margin: 20px;
+    font-family: 'Roboto', monospace;
+}
+.upload-icon {
+    display: block;
+    background-image: url("{% static 'core/images/file icon.png'%}");
+    padding: 10px;
+    background-size: contain;
+    background-repeat: no-repeat;
+    width: 50px;
+    height: 50px;
+    margin-bottom: 0px; /* added margin bottom */
+}
     </style>
 </head>
 <body>
@@ -36,121 +46,71 @@
                     <div class="upload-area" id="upload-area">
                         <div class="upload-icon"></div>
                         <div class="upload-text">
-                            <p>
-                                Drag your file(s) to start uploading
-                            </p>
+                            <p>Drag your file(s) to start uploading</p>
                             <p id="file-name-display" style="text-align: center; color: #898989;">Select files</p>
                             <input type="file" name="pdf_file" id="file-input" style="display: none;" required>
                         </div>
                         <div class="browse-button" id="browse-button">Browse</div>
                     </div>
                     <div class="button-container">
-                        <button type="submit" class="upload-button">Upload</button>
+                        <button type="submit" class="upload-button" id="upload-button">Upload</button>
                         <br>
                         <div class="cancel-button" id="cancel-button">Cancel</div>
                     </div>
                 </form>
-                
             </div>
         </div>
-        <!--<div class="stored-media">
-            <table id="file-table" style="width: 100%; border-collapse: collapse;">
-                <thead class="header-table">
-                    <tr style="color: white;">
-                        <th style="padding: 10px; text-align: center;">File Name</th>
-                        <th style="padding: 10px; text-align: center;">Uploaded At</th>
-                    </tr>
-                </thead>
-                <tbody id="file-list">
-                    <tr>
-                        <td colspan="2" style="text-align: center;">No files uploaded yet.</td>
-                    </tr>
-                </tbody>
-            </table>
-        </div> -->
     </div>
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script>
-        function fetchUploadedFiles() {
-            $.ajax({
-                url: "{% url 'get_uploaded_files' %}",  // Replace with your actual URL
-                method: "GET",
-                success: function(data) {
-                    $('#file-list').empty();  // Clear the list
-                    if (data.length > 0) {
-                        data.forEach(function(file) {
-                            const formattedDate = formatDate(new Date(file.upload_time));
-                            $('#file-list').append(`
-                                <tr>
-                                    <td>${file.name}</td>
-                                        <td>
-                                            ${formattedDate}
-                                        </td>
-                                </tr>  
-                            `);
-                        });
-                    } else {
-                        $('#file-list').append('<li>No files uploaded yet.</li>');
-                    }
-                },
-                error: function() {
-                    alert('Error fetching files.');
-                }
-            });
-        }
-        function formatDate(date) {
-            const options = { day: '2-digit', month: '2-digit', year: '2-digit', weekday: 'long'};
-            return date.toLocaleDateString('en-GB', options) + ' ' + date.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
-        }
-    
+        $('#file-input').on('change', function() {
+            const fileName = $(this).val().split('\\').pop(); // Get the file name
+            if (fileName) {
+                $('#file-name-display').text(fileName); // Update the text with the selected file name
+                $('#upload-button').text('Upload'); // Ensure button text reflects the upload action
+            } else {
+                $('#upload-button').text('Upload');
+            }
+        });
+
         $(document).ready(function() {
-            fetchUploadedFiles();  // Fetch files when the page loads
-    
-            // Trigger file input when Browse button is clicked
             $('#browse-button').on('click', function() {
                 $('#file-input').click();
             });
-    
-            // Handle file selection from file input
-            $('#file-input').on('change', function() {
-                const fileName = $(this).val().split('\\').pop(); // Get the file name
-                if (fileName) {
-                    $('#file-name-display').text(fileName); // Update the text with the selected file name
-                }
-            });
-    
+
             // Handle drag and drop events
             const uploadArea = $('#upload-area');
-    
+
             uploadArea.on('dragover', function(e) {
                 e.preventDefault(); // Prevent default drag behaviors
                 e.stopPropagation();
                 uploadArea.addClass('drag-over'); // Optional: Add a class to style the area when dragging
             });
-    
+
             uploadArea.on('dragleave', function(e) {
                 e.preventDefault();
                 e.stopPropagation();
                 uploadArea.removeClass('drag-over'); // Optional: Remove the class when not dragging
             });
-    
+
             uploadArea.on('drop', function(e) {
                 e.preventDefault();
                 e.stopPropagation();
                 uploadArea.removeClass('drag-over'); // Remove the drag-over class
-    
+
                 const files = e.originalEvent.dataTransfer.files; // Get the files from the drop event
                 if (files.length > 0) {
                     $('#file-input')[0].files = files; // Set the files to the input
-                    $('#upload-area .upload-text p').text(files[0].name); // Update the text with the dropped file name
+                    $('#file-name-display').text(files[0].name); // Update the text with the dropped file name
                 }
-            });
+ });
 
             $('#cancel-button').on('click', function() {
                 $('#file-input').val('');
-                $('#file-name-display').text('No file selected')
+                $('#file-name-display').text('Select Files');
+                $('#upload-button').text('Upload');
             });
         });
     </script>
-    </body>
+</body>
 </html>
