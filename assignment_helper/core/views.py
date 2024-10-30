@@ -17,7 +17,9 @@ from nltk.corpus import words
 import google
 import json
 from django.contrib.auth.decorators import login_required
-
+from django.contrib.auth import authenticate, login
+from django.contrib import messages
+from .forms import CustomLoginForm
 # Configure the Gemini API
 genai.configure(api_key=os.environ['API_KEY'])
 
@@ -26,11 +28,9 @@ nlp = spacy.load("en_core_web_sm")
 # Load English words list
 english_words = set(words.words())
 
-# views.py
-from django.contrib.auth import authenticate, login
-from django.contrib.auth.decorators import login_required
-from django.shortcuts import render, redirect
-from .forms import CustomLoginForm
+def index(request):
+    print("Rendering index page.")
+    return render(request, 'core/index.html')
 
 def login_view(request):
     if request.method == 'POST':
@@ -41,14 +41,33 @@ def login_view(request):
             user = authenticate(request, username=username, password=password)
             if user is not None:
                 login(request, user)
-                return redirect('upload_pdf')  # Redirect to the upload PDF page or any other page
+                return redirect('saved_files')  # Redirect to the upload PDF page or any other page
             else:
                 form.add_error(None, "Invalid username or password.")
     else:
         form = CustomLoginForm()
     return render(request, 'core/login.html', {'form': form})
 
-# Question Bank PDF class (remains unchanged)
+from .forms import SignUpForm
+def sign_up(request):
+    if request.method == 'POST':
+        form = SignUpForm(request.POST)
+        if form.is_valid():
+            user = form.save(commit=False)
+            user.set_password(form.cleaned_data['password'])
+            user.save()
+            messages.success(request, "Registration Successful.")
+            return redirect('login')  # Redirect to the login page
+    else:
+        form = SignUpForm()
+    return render(request, 'core/sign_up.html', {'form': form})
+
+from django.contrib.auth import logout
+@login_required
+def log_out(request):
+    logout(request)
+    return redirect('login')
+
 class QuestionBankPDF(FPDF):
     def __init__(self):
         super().__init__()
@@ -92,16 +111,11 @@ class QuestionBankPDF(FPDF):
             self.multi_cell(0, 10, f'Answer: {answer}')
             self.ln(5)
 
-def index(request):
-    print("Rendering index page.")
-    return render(request, 'core/index.html')
-
 from django.db import IntegrityError
-
 @login_required
 def upload_pdf(request):
     print("Upload PDF view accessed.")
-    uploaded_files = Document.objects.filter(user=request.user)
+    uploaded_files = Document.objects.filter(user=request.user)  # Filter by logged-in user
     if request.method == 'POST':
         print("POST request received for PDF upload.")
         form = PDFUploadForm(request.POST, request.FILES)
@@ -138,31 +152,31 @@ def upload_pdf(request):
                     print(f"Preview image created for document ID {document.id}.")
 
             # Extract questions from the PDF
-            questions = extract_questions(pdf_file)
-            print(f"Extracted questions: {questions}")
+            questions_with_ids = extract_questions(pdf_file)
+            print(f"Extracted questions: {questions_with_ids}")
 
             # Store the new questions in the database
-            for i, question_text in enumerate(questions):
+            for question_id, question_text in questions_with_ids:
                 try:
                     # Create a new APIResponse entry for each question
                     APIResponse.objects.create(
                         document=document,
                         question=question_text,
-                        question_id=i + 1  # Assign a new unique question ID
+                        question_id=question_id  # Assign a new unique question ID
                     )
                     print(f"Stored question: {question_text}")
                 except IntegrityError:
-                    print(f"IntegrityError for question: {question_text} with document ID: {document.id}")
+                    print(f" IntegrityError for question: {question_text} with document ID: {document.id}")
                     continue  # Skip to the next question if an integrity error occurs
 
             # Store questions in the session
-            request.session['questions'] = list(questions)
+            request.session['questions'] = [q[1] for q in questions_with_ids]
             request.session['document_id'] = document.id
             print(f"Questions stored in session for document ID {document.id}.")
 
             # Render the success page with questions
             return render(request, 'core/upload_success.html', {
-                'questions': questions,
+                'questions': [q[1] for q in questions_with_ids],
                 'extracted_text': None,
             })
     else:
@@ -170,15 +184,17 @@ def upload_pdf(request):
 
     return render(request, 'core/upload_pdf.html', {'form': form, 'uploaded_files': uploaded_files})
 
+@login_required
 def saved_files(request):
     print("Accessing saved files.")
-    uploaded_files = Document.objects.exclude(name='Default Document')
+    uploaded_files = Document.objects.filter(user=request.user)  # Filter by logged-in user
     context = {'uploaded_files': uploaded_files}
     return render(request, 'core/saved_files.html', context)
 
+@login_required
 def get_uploaded_files(request):
     print("Fetching uploaded files.")
-    files = Document.objects.all().order_by('-uploaded_at')
+    files = Document.objects.filter(user=request.user).order_by('-uploaded_at')  # Filter by logged-in user
     file_list = [{
         'id': file.id,
         'name': file.name,
@@ -189,9 +205,10 @@ def get_uploaded_files(request):
     } for file in files]
     return JsonResponse(file_list, safe=False)
 
+@login_required
 def delete_file(request, file_id):
     print(f"Deleting file with ID: {file_id}.")
-    document = get_object_or_404(Document, id=file_id)
+    document = get_object_or_404(Document, id=file_id, user=request.user)  # Filter by logged-in user
     file_path = document.file.path
     if os.path.isfile(file_path):
         os.remove(file_path)
@@ -214,9 +231,10 @@ def delete_file(request, file_id):
     print(f"Document with ID {file_id} deleted.")
     return redirect('upload_pdf')
 
+@login_required
 def download_file(request, file_id):
     print(f"Downloading file with ID: {file_id}.")
-    document = get_object_or_404(Document, id=file_id)
+    document = get_object_or_404(Document, id=file_id, user=request.user)  # Filter by logged-in user
 
     if document.answers:
         file_path = document.answers.path
@@ -227,7 +245,7 @@ def download_file(request, file_id):
         else:
             return JsonResponse({'error': 'Answer file not found.'}, status=404)
 
-    questions_and_answers = APIResponse.objects.filter(document=document)
+    questions_and_answers = APIResponse.objects.filter(document=document, user=request.user)  # Filter by logged-in user
     if not questions_and_answers.exists():
         return JsonResponse({'error': 'No questions and answers found for this document.'}, status=404)
 
@@ -236,19 +254,23 @@ def download_file(request, file_id):
 
     return generate_question_bank_pdf(questions, answers, document.id)
 
+@login_required
 def view_answers(request, file_id):
     print(f"Viewing answers for file with ID: {file_id}.")
-    document = get_object_or_404(Document, id=file_id)
-    answers = document.api_responses.all()
+    document = get_object_or_404(Document, id=file_id, user=request.user)  # Filter by logged-in user
 
+    answers = document.api_responses.all()  
     questions = [response.question for response in answers]
-    for question in questions:
-        if question[0].isdigit():
-            question = question[1:]
-    
     formatted_answers = [response.answer for response in answers]
 
-    question_answer_map = dict(zip(questions, formatted_answers))
+    # Extract question IDs from the APIResponse objects
+    question_ids = [response.question_id for response in answers]
+
+    # Create a question_answer_map using question IDs as keys and formatted answers as values
+    question_answer_map = {}
+    for question_id in question_ids:
+        if question_id <= len(formatted_answers):  # Ensure the index is valid
+            question_answer_map[questions[question_id - 1]] = formatted_answers[question_id - 1]
 
     pdf_file_path = os.path.join(settings.MEDIA_ROOT, f"answers/answers_{document.id}.pdf")
     if not os.path.exists(pdf_file_path):
@@ -262,13 +284,13 @@ def view_answers(request, file_id):
         'formatted_answers': formatted_answers,
     })
 
+@login_required
 def update_questions(request):
     print("Updating questions.")
     if request.method == 'POST':
         document_id = request.session.get('document_id')
         if not document_id:
             return JsonResponse({'error': 'Document ID not found in session.'}, status=400)
-
 
         modified_questions_json = request.body.decode('utf-8')
         try:
@@ -282,7 +304,7 @@ def update_questions(request):
             question_id = int(question_data['id'])
             question_text = question_data['text']
             try:
-                api_response = APIResponse.objects.get(document_id=document_id, question_id=question_id)
+                api_response = APIResponse.objects.get(document_id=document_id, question_id=question_id, user=request.user)  # Filter by logged-in user
                 api_response.question = question_text
                 api_response.save()
                 print(f"Question {question_id} updated to: {question_text}")
@@ -311,7 +333,7 @@ def generate_answer(request):
             
 
             if answer and isinstance(answer, list) and len(answer) > 0:
-                api_response = APIResponse.objects.get(question=question)
+                api_response = APIResponse.objects.get(question=question, user=request.user)  # Filter by logged-in user
                 api_response.answer = answer[0]
                 api_response.save()
                 return JsonResponse({'answer': answer[0]})  # Return the first answer
@@ -330,7 +352,7 @@ def generate_answers(request):
         if not document_id:
             return JsonResponse({'error': 'Document ID not found in session.'}, status=400)
 
-        document = get_object_or_404(Document, id=document_id)
+        document = get_object_or_404(Document, id=document_id, user=request.user)  # Filter by logged-in user
 
         # Fetch the latest responses from the database
         questions_to_process = document.api_responses.values_list('question', flat=True)
@@ -349,9 +371,8 @@ def generate_answers(request):
         print(f"Question IDs to process: {question_ids}")
 
         # Fetch the actual questions from the APIResponse model using the question IDs
-        questions = APIResponse.objects.filter(document_id=document_id, question_id__in=question_ids).values_list('question', flat=True)
-        questions_list = list(questions)  # Convert to a list for easy processing
-
+        questions_to_process = document.api_responses.values_list('question', flat=True)
+        questions_list = list(questions)
         print(f"Questions to process: {questions_list}")
 
         # Directly fetch new answers from the Gemini API using the actual questions
@@ -360,13 +381,15 @@ def generate_answers(request):
          # Pass the actual questions
         answers = clean_and_format_data(answers)
         print("CLEANED API RESPONSE: \n", answers, "\n\n")
-
+        
         question_id_answer_map = {}
-
+        ans_map = {idx + 1: answer for idx, answer in enumerate(answers)}
+        print("\n\n", ans_map, "\n\n")
         if answers:
-            for question_id, answer in zip(question_ids, answers):
-                question_id_answer_map[question_id] = str(answer)
-            store_api_responses(question_ids, answers, document_id)  # Store the new answers
+            for question_id in question_ids:
+                if question_id in ans_map:
+                    question_id_answer_map[question_id] = ans_map[question_id]
+            store_api_responses(question_ids, ans_map, document_id)  # Store the new answers
         else:
             # If all new answers are empty strings
             return render(request, 'core/generate_answers.html', {
@@ -375,20 +398,21 @@ def generate_answers(request):
             })
 
         question_answer_map = {}
-        for question, answer in zip(questions, answers):
-            if question[0].isdigit():
-                question = question[1:]
-            question_answer_map[question] = answer
+        for question_id in question_ids:
+            if question_id in ans_map and question_id <= len(ans_map.keys()):
+                question_answer_map[questions_list[question_id - 1]] = ans_map[question_id]
 
         return render(request, 'core/generate_answers.html', {
             'question_answer_map': question_answer_map,
             'viewing_answers': True,
+            'document' : document,
         })
 
     return render(request, 'core/generate_answers.html', {
         'error': "Invalid request method.",
         'question_answer_map': {}
     })
+
 def generate_question_bank_pdf(questions, answers, document_id):
     print("Generating question bank PDF.")
     media_dir = settings.MEDIA_ROOT
@@ -425,17 +449,19 @@ def generate_question_bank_pdf(questions, answers, document_id):
 
     return FileResponse(open(pdf_output, 'rb'), content_type='application/pdf')
 
-def store_api_responses(questions_ids, answers, document_id):
+
+def store_api_responses(questions_ids, answer_map, document_id):
     print("Storing API responses.")
     print(questions_ids)
-    print(answers)
-    for question_id, answer in zip(questions_ids, answers):
-        APIResponse.objects.update_or_create(
-            document_id=document_id,
-            question_id=question_id,
-            defaults={'answer': answer}
-        )
+    for question_id in questions_ids:
+        if question_id in answer_map:
+            APIResponse.objects.update_or_create(
+                document_id=document_id,
+                question_id=question_id,
+                defaults={'answer': str(answer_map[question_id])}
+            )
 
+@login_required
 def get_cached_answers(question_ids):
     print("Fetching cached answers.")
     answers = []
@@ -446,6 +472,7 @@ def get_cached_answers(question_ids):
         except APIResponse.DoesNotExist:
             answers.append(None)
     return [answer for answer in answers if answer is not None]
+
 
 def get_answers_from_gemini(questions):
     print("Fetching answers from Gemini.")
@@ -463,33 +490,56 @@ def get_answers_from_gemini(questions):
         print(f"An error occurred: {e}")
         return ['An error occurred. Please try again.']
 
+'''RESPONSE CLEANING PIPELINE'''
 import re
 
-def clean_and_format_data(raw_data):
-    print("Cleaning and formatting data.")
-    answer_sections = re.split(r'\*\*\d+\.\s', raw_data)  # Split by numbered headers
-    cleaned_answers = []
+def normalize_text(raw_text):
+    """ Normalize the text by removing unwanted characters and excessive whitespace. """
+    # Remove unwanted characters (e.g., newlines, extra spaces)
+    normalized_text = re.sub(r'\s+', ' ', raw_text).strip()
+    return normalized_text
+
+def extract_questions_and_answers(normalized_text):
+    """ Extract questions and their corresponding answers. """
+    # Pattern to detect questions
+    question_pattern = re.compile(r'(\*\*\d+\.\s.+?:|\*\*\d+\.\s\w+\s*\w+)', re.MULTILINE)
+    questions = question_pattern.split(normalized_text)
     
-    for section in answer_sections:
-        # Clean and format each section individually
-        
-        # Step 1: Remove unnecessary headers or markers like '## Exam Answers:' and asterisks
-        section = re.sub(r'^\s*##\s+Exam\s+Answers:|[*#]+', '', section).strip()
-        
-        # Step 2: Clean unnecessary spaces or symbols from the beginning and end
-        section = re.sub(r'^[^a-zA-Z0-9]*|[^a-zA-Z0-9]*$', '', section)
-        
-        # Step 3: Remove excess spaces between words and punctuation
-        section = re.sub(r'\s+', ' ', section)
-        
-        # Step 4: Ensure items within answers (like points in bullet lists) are cleaned:
-        section = re.sub(r'([.!?])\s*([A-Z])', r'\1 \2', section)  # Ensure proper sentence spacing
-        
-        # Step 5: Add the cleaned section to list if it's not empty
-        if section:
-            cleaned_answers.append(section)
+    qa_pairs = []
+    for i in range(1, len(questions), 2):  # We expect pairs (question, answer)
+        question = questions[i].strip()
+        answer = questions[i + 1].strip() if (i + 1) < len(questions) else ""
+        question_cleaned = question.replace('**', '').strip() if question.startswith('**') else question
+        answer_cleaned = re.sub(r'^\s*Answer:\s*', '', answer, flags=re.IGNORECASE).strip()
+        qa_pairs.append((question_cleaned, answer_cleaned))
     
-    return cleaned_answers
+    return qa_pairs
+
+def clean_and_format_data(raw_text):
+    """ Main function to clean and format the API response. """
+    # Step 1: Normalize text
+    normalized_text = normalize_text(raw_text)
+    
+    # Step 2: Extract questions and answers
+    qa_pairs = extract_questions_and_answers(normalized_text)
+
+    cleaned_responses = []
+    
+    # Step 3: Format extracted questions and answers
+    for question, answer in qa_pairs:
+        if question and answer:  # Ensure both question and answer are non-empty
+            # Format question as a heading
+            formatted_answer = f"<strong>{question}</strong><ul>"
+            
+            # Split the answer into bullet points
+            bullets = re.split(r'\*\s*', answer)  # Splitting by bullet points (using '*')
+            formatted_bullets = "".join(f"<li>{bullet.strip()}</li>" for bullet in bullets if bullet.strip())
+            
+            formatted_answer += formatted_bullets + "</ul>"
+            cleaned_responses.append(formatted_answer)
+    
+    return cleaned_responses
+
 
 '''QUESTION EXTRACTION PIPELINE'''
 def extract_text_from_pdf(pdf_file):
@@ -544,7 +594,11 @@ def extract_numbered_questions(text):
 
     # Regex to capture questions starting with numbers or "Qx"
     question_pattern = re.compile(r'^\d+(\.|:|)\s+|^Q\d+\.?', re.IGNORECASE)
-    questions = [line for line in merged_lines if question_pattern.match(line) and len(line.split()) > 3]
+    questions = [
+        re.sub(r'^\d+(\.|:|)\s*', '', line).strip()  # Remove the leading number and punctuation
+        for line in merged_lines
+        if question_pattern.match(line) and len(line.split()) > 3
+    ]
     
     return questions
 
@@ -554,6 +608,7 @@ def detect_questions_spacy(text):
     doc = nlp(text)
     return [sent.text.strip() for sent in doc.sents if sent.text.strip().endswith("?")]
 
+from collections import OrderedDict
 def extract_questions(pdf_path):
     """Main function to extract questions from PDF with robust filtering."""
     raw_text = extract_text_from_pdf(pdf_path)
@@ -565,5 +620,9 @@ def extract_questions(pdf_path):
 
     # Combine and deduplicate questions
     all_questions = list(set(numbered_questions + nlp_detected_questions))
-    return all_questions
-
+    all_questions = list(OrderedDict.fromkeys(all_questions))
+    
+    question_id_mapping = []
+    for index, question in enumerate(all_questions, start=1):
+        question_id_mapping.append((index, question))
+    return question_id_mapping

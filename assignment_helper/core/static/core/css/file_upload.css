@@ -1,289 +1,331 @@
-
-
 .nav-bar {
-display: flexbox;
-flex-direction: row;
-justify-content: space-between;
+    display: flexbox;
+    flex-direction: row;
+    justify-content: space-between;
+  }
+  
+  .nav-br-buttons {
+    text-decoration: none;
+    background-color: #7C3AFF; /* added background color */
+    color: #fff; /* added text color */
+    padding: 10px 20px; /* added padding */
+    border: none; /* added border */
+    border-radius: 10px; /* added border radius */
+    cursor: pointer; /* added cursor pointer */
+    transition: background-color 0.2s ease-in-out;
+    gap: 20px;
+  }
+  
+  .nav-br-buttons:hover {
+    background-color: #4412A5;
+  }
+  
+  @keyframes fadeInFromBottom {
+    0% {
+      opacity: 0; /* Fully transparent */
+      transform: translateY(70px) scale(0.95); /* Start lower and slightly smaller */
+    }
 
-}
-.nav-br-buttons {
-text-decoration: none;
-background-color:  #7C3AFF; /* added background color */
-color: #fff; /* added text color */
-padding: 10px 20px; /* added padding */
-border: none; /* added border */
-border-radius: 10px; /* added border radius */
-cursor: pointer; /* added cursor pointer */
-transition: background-color 0.2s ease-in-out;
-gap: 20px;
-}
-.nav-br-buttons:hover {
-background-color: #4412A5;
-}
-.main-container {
-display: flex;
-flex-direction: column;
-padding: 10px;
-align-items: center;
-width: 100%;
-height: 100%;
-}
-
-.media-upload {
-margin-top: 5%;
-padding: 2%;
-width: 30%;
-height: fit-content;
-background: linear-gradient(to bottom, #141414, #1B1B1B); /* added background color */
-border-radius: 15px; /* added border radius */
-box-shadow: 0 0 10px rgba(0, 0, 0, 0.1); /* added box shadow */
-align-items: center;
-justify-content: center;
-}
-
-@property --angle {
-syntax: "<angle>";
-initial-value: 0deg;
-inherits: false;
-}
-
-@keyframes spin {
-0% {
---angle: 0deg;
-}
-100% {
---angle: 360deg;
-}
-}
-
-.media-upload::before,
-.media-upload::after {
-content: "";
-position: absolute;
-height: 77%; /* Adjusted for consistency */
-width: 32.5%;
-translate: -6.5% -6.8%; /* Adjust as needed for each pseudo-element */
-z-index: -1; /* Changed from -1 to 0 */
-border-radius: 15px;
-padding: 4.5px; /* Adjusted for consistency */
-background-image: conic-gradient(from var(--angle),transparent 70%, #560bec, #7C3AFF, #3f0ca6, #560bec);
-animation: 3s spin linear infinite;
-}
-
-.media-upload::after {
-height: 77%; /* Retain specific height */
-translate: -6.5% -101.3%; /* Specific translation for after */
-}
-
-.media-upload::before {
-height: 78%; /* Retain specific height */
-filter: blur(2.0rem); /* Consider adding vendor prefixes for better compatibility */
-opacity: 50%;
-background-image: conic-gradient(from var(--angle),transparent 70%, #560bec, #7C3AFF, #6643ac, #560bec);
-}
-
-.media-upload-container {
-display: flex;
-flex-direction: column;
-padding: 20px;
-height: 100%; /* added height */
-}
-
-.text {
-margin-bottom: 5px; /* added margin bottom */
-color: white;
-}
-
-.upload-area {
-display: flex;
-border-radius: 15px;
-border: 2px #7C3AFF; /* changed border style */
-padding: 20px;
-height: 60%;
-flex-direction: column;
-align-items: center;
-cursor: pointer; /* added cursor pointer */
-border-style: dashed;
-transition: transform 0.2s ease-in-out, background 0.2s ease-in-out, border-color 0.2s ease-in-out;
-}
-.upload-area:hover {
-transform: scale(1.0);
-background: #4412A5;
-border-color: #7C3AFF;
-}
-
-
-
-.upload-text {
-font-size: 16px; /* added font size */
-margin-bottom: 20px; /* added margin bottom */
-color: white;
-}
-
-.browse-button {
-background-color: rgb(255, 255, 255); /* added background color */
-color:  #7C3AFF; /* added text color */
-padding: 5px 15px; /* added padding */
-border-color:  #7C3AFF;
-border-style: outset; /* added border */
-border-radius: 10px; /* added border radius */
-cursor: pointer; /* added cursor pointer */
-}
-
-.button-container {
-display: flex;
-flex-direction: column;
-justify-content: space-between; /* added justify content */
-align-items: center;
-margin-top: 20px; /* added margin top */
-}
-
-.upload-button {
-text-decoration: none;
-background-color:  #7C3AFF; /* added background color */
-color: #fff; /* added text color */
-padding: 10px 20px; /* added padding */
-border: none; /* added border */
-border-radius: 10px; /* added border radius */
-cursor: pointer; /* added cursor pointer */
-transition: background-color 0.2s ease-in-out;
-}
-.upload-button:hover {
-background-color: #4412A5;
-}
-
-.cancel-button {
-background-color: #ccc; /* added background color */
-color: #333; /* added text color */
-padding: 10px 20px; /* added padding */
-border: none; /* added border */
-border-radius: 10px; /* added border radius */
-cursor: pointer; /* added cursor pointer */
-transition: background-color 0.2s ease-in-out;
-}
-.cancel-button:hover {
-background-color: #898989;
-}
-
-.stored-media {
-display: flex;
-flex-direction: column;
-padding: 2%;
-width: 50%;
-height: 50%;
-margin-top: 10%;
-background: transparent;
-border-radius: 15px; /* added border radius */
-box-shadow: 0 0 10px rgba(0, 0, 0, 0.1); /* added box shadow */
-}
-table {
-width: 100%; /* Full width */
-border-collapse: collapse; /* Collapse borders */
-}
-.header-table {
-background-color: #7C3AFF;
-}
-
-
-td, th {
-padding: 15px;
-text-align: center;
-justify-content: space-between;
-}
-
-button {
-background-color: #535353;
-color: white;
-padding: 8px 12px;
-border: none;
-border-radius: 10px;
-cursor: pointer;
-transition: background-color 0.2s ease-in-out;
-justify-content: space-around;
-}
-
-button:hover {
-background-color: #333;
-}
-
-/* Media Queries */
-
-/* For devices with a maximum width of 1200px (Tablets and large phones) */
-@media (max-width: 1200px) {
-.nav-bar {
-flex-direction: column; /* Stack nav items vertically */
-align-items: center; /* Center align items */
-}
-.media-upload {
-width: 60%; /* Wider on larger screens */
-}
-.stored-media {
-width: 80%; /* Wider on larger screens */
-}
-}
-
-/* For devices with a maximum width of 992px (Tablets) */
-@media (max-width: 992px) {
-.media-upload {
-width: 60%; /* Full width on smaller screens */
-}
-.stored-media {
-width: 70%; /* Full width on smaller screens */
-}
-.nav-br-buttons {
-padding: 8px 15px; /* Smaller padding for buttons */
-font-size: 14px; /* Smaller font size */
-}
-}
-
-/* For devices with a maximum width of 768px (Small tablets and large phones) */
-@media (max-width: 768px) {
-body {
-flex-direction: column; /* Stack elements vertically */
-margin: 10px; /* Reduce margin */
-}
-.media-upload {
-margin-top: 20px; /* More space on top */
-width: 80%; /* Full width */
-}
-.nav-bar {
-flex-direction: column; /* Stack nav items vertically */
-}
-.upload-area {
-height: auto; /* Allow height to adjust */
-}
-.upload-text {
-font-size: 14px; /* Smaller font size */
-}
-.upload-button, .cancel-button {
-padding: 8px 15px; /* Smaller button padding */
-font-size: 14px; /* Smaller font size */
-}
-}
-
-/* For devices with a maximum width of 576px (Mobile phones) */
-@media (max-width: 576px) {
-.nav-bar {
-display: flex;
-flex-direction: column;
-}
-.nav-br-buttons {
-width: 100%; /* Full width buttons */
-text-align: center; /* Center text */
-margin-bottom: 10px; /* Space between buttons */
-}
-.upload-text {
-font-size: 12px; /* Smaller font size */
-}
-.upload-button, .cancel-button {
-width: 90%; /* Full width buttons */
-font-size: 14px; /* Smaller font size */
-}
-.cancel-button {
-width: 82%;
-justify-content: center;
-}
-.stored-media {
-width: 100%; /* Full width for media display */
-}
-}
+    100% {
+      opacity: 1; /* Fully visible */
+      transform: translateY(0) scale(1); /* End at original position and size */
+    }
+  }
+  
+  .main-container {
+    display: flex;
+    flex-direction: column;
+    padding: 10px;
+    align-items: center;
+    width: 100%;
+    height: 100%;
+    opacity: 0; /* Start hidden */
+    animation: fadeInFromBottom 1s cubic-bezier(0.68, -0.55, 0.27, 1.55) forwards; /* Smooth animation with custom easing */
+    animation-delay: 0.1s; /* Delay for smoother entrance */
+  }
+  
+  /* Optional: Add a transition for any other properties you want to animate */
+  .main-container > * {
+    transition: transform 0.3s ease, opacity 0.3s ease; /* Smooth transition for children */
+  }
+  
+  .main-container.show {
+    opacity: 1; /* Trigger visibility */
+  }
+  
+  .media-upload {
+    margin-top: 5%;
+    padding: 2%;
+    width: 30%;
+    height: fit-content;
+    background: linear-gradient(to bottom, #141414, #1B1B1B); /* added background color */
+    border-radius: 15px; /* added border radius */
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1); /* added box shadow */
+    align-items: center;
+    justify-content: center;
+  }
+  
+  @property --angle {
+    syntax: "<angle>";
+    initial-value: 0deg;
+    inherits: false;
+  }
+  
+  @keyframes spin {
+    0% {
+      --angle: 0deg;
+    }
+    100% {
+      --angle: 360deg;
+    }
+  }
+  
+  .media-upload::before,
+  .media-upload::after {
+    content: "";
+    position: absolute;
+    height: 70%; /* Adjusted for consistency */
+    width: 33.5%;
+    translate: -6.5% -10%; /* Adjust as needed for each pseudo-element */
+    z-index: -1; /* Changed from -1 to 0 */
+    border-radius: 15px;
+    padding: 4px; /* Adjusted for consistency */
+    background-image: conic-gradient(
+      from var(--angle), 
+      #560bec, 
+      #A855F7, 
+      #3B82F6, 
+      #3f0ca6, 
+      #9333EA, 
+      #560bec
+    );
+    animation: 3s spin linear infinite;
+  }
+  
+  .media-upload::after {
+    height: 74.5%; /* Retain specific height */
+    translate: -6.5% -101.3%; /* Specific translation for after */
+  }
+  
+  .media-upload::before {
+    height: 76%; /* Retain specific height */
+    filter: blur(2.0em); /* Consider adding vendor prefixes for better compatibility */
+    opacity: 50%;
+    background-image: conic-gradient(
+      from var(--angle), 
+      #560bec, 
+      #A855F7, 
+      #3B82F6, 
+      #3f0ca6, 
+      #9333EA, 
+      #560bec
+    );
+  }
+  
+  .media-upload-container {
+    display: flex;
+    flex-direction: column;
+    padding: 20px;
+    height: 100%; /* added height */
+  }
+  
+  .text {
+    margin-bottom: 5px; /* added margin bottom */
+    color: white;
+  }
+  
+  .upload-area {
+    display: flex;
+    border-radius: 15px;
+    border: 2px #7C3AFF; /* changed border style */
+    padding: 20px;
+    height: 60%;
+    flex-direction: column;
+    align-items: center;
+    cursor: pointer; /* added cursor pointer */
+    border-style: dashed;
+    transition: transform 0.2s ease-in-out, background 0.2s ease-in-out, border-color 0.2s ease-in-out;
+  }
+  
+  .upload-area:hover {
+    transform: scale(1.0);
+    background: #4412A5;
+    border-color: #7C3AFF;
+  }
+  
+  .upload-text {
+    font-size: 16px; /* added font size */
+    margin-bottom: 20px; /* added margin bottom */
+    color: white;
+  }
+  
+  .browse-button {
+    background-color: rgb(255, 255, 255); /* added background color */
+    color: #7C3AFF; /* added text color */
+    padding: 5px 15px; /* added padding */
+    border-color: #7C3AFF;
+    border-style: outset; /* added border */
+    border-radius: 10px; /* added border radius */
+    cursor: pointer; /* added cursor pointer */
+  }
+  
+  .button-container {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between; /* added justify content */
+    align-items: center;
+    margin-top: 20px; /* added margin top */
+  }
+  
+  .upload-button {
+    text-decoration: none;
+    background-color: #7C3AFF; /* added background color */
+    color: #fff; /* added text color */
+    padding: 10px 20px; /* added padding */
+    border: none; /* added border */
+    border-radius: 10px; /* added border radius */
+    cursor: pointer; /* added cursor pointer */
+    transition: background-color 0.2s ease-in-out;
+  }
+  
+  .upload-button:hover {
+    background-color: #4412A5;
+  }
+  
+  .cancel-button {
+    background-color: #ccc; /* added background color */
+    color: #333; /* added text color */
+    padding: 10px 20px; /* added padding */
+    border: none; /* added border */
+    border-radius: 10px; /* added border radius */
+    cursor: pointer; /* added cursor pointer */
+    transition: background-color 0.2s ease-in-out;
+  }
+  
+  .cancel-button:hover {
+    background-color: #898989;
+  }
+  
+  .stored-media {
+    display: flex;
+    flex-direction: column;
+    padding: 2%;
+    width: 50%;
+    height: 50%;
+    margin-top: 10%;
+    background: transparent;
+    border-radius: 15px; /* added border radius */
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1); /* added box shadow */
+  }
+  
+  table {
+    width: 100%; /* Full width */
+    border-collapse: collapse; /* Collapse borders */
+  }
+  
+  .header-table {
+    background-color: #7C3AFF;
+  }
+  
+  td, th {
+    padding: 15px;
+    text-align: center;
+    justify-content: space-between;
+  }
+  
+  button {
+    background-color: #535353;
+    color: white;
+    padding: 8px 12px;
+    border: none;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: background-color 0.2s ease-in-out;
+    justify-content: space-around;
+  }
+  
+  button:hover {
+    background-color: #333;
+  }
+  
+  /* Media Queries */
+  
+  /* For devices with a maximum width of 1200px (Tablets and large phones) */
+  @media (max-width: 1200px) {
+    .nav-bar {
+      flex-direction: column; /* Stack nav items vertically */
+      align-items: center; /* Center align items */
+    }
+    .media-upload {
+      width: 60%; /* Wider on larger screens */
+    }
+    .stored-media {
+      width: 80%; /* Wider on larger screens */
+    }
+  }
+  
+  /* For devices with a maximum width of 992px (Tablets) */
+  @media (max-width: 992px) {
+    .media-upload {
+      width: 60%; /* Full width on smaller screens */
+    }
+    .stored-media {
+      width: 70%; /* Full width on smaller screens */
+    }
+    .nav-br-buttons {
+      padding: 8px 15px; /* Smaller padding for buttons */
+      font-size: 14px; /* Smaller font size */
+    }
+  }
+  
+  /* For devices with a maximum width of 768px ( Small tablets and large phones) */
+  @media (max-width: 768px) {
+    body {
+      flex-direction: column; /* Stack elements vertically */
+      margin: 10px; /* Reduce margin */
+    }
+    .media-upload {
+      margin-top: 20px; /* More space on top */
+      width: 80%; /* Full width */
+    }
+    .nav-bar {
+      flex-direction: column; /* Stack nav items vertically */
+    }
+    .upload-area {
+      height: auto; /* Allow height to adjust */
+    }
+    .upload-text {
+      font-size: 14px; /* Smaller font size */
+    }
+    .upload-button, .cancel-button {
+      padding: 8px 15px; /* Smaller button padding */
+      font-size: 14px; /* Smaller font size */
+    }
+  }
+  
+  /* For devices with a maximum width of 576px (Mobile phones) */
+  @media (max-width: 576px) {
+    .nav-bar {
+      display: flex;
+      flex-direction: column;
+    }
+    .nav-br-buttons {
+      width: 100%; /* Full width buttons */
+      text-align: center; /* Center text */
+      margin-bottom: 10px; /* Space between buttons */
+    }
+    .upload-text {
+      font-size: 12px; /* Smaller font size */
+    }
+    .upload-button, .cancel-button {
+      width: 90%; /* Full width buttons */
+      font-size: 14px; /* Smaller font size */
+    }
+    .cancel-button {
+      width: 82%;
+      justify-content: center;
+    }
+    .stored-media {
+      width: 100%; /* Full width for media display */
+    }
+  }

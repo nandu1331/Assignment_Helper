@@ -34,6 +34,9 @@
         <div class="nav-bar">
             <a href="{% url 'index' %}" class="nav-br-buttons">Home</a>
             <a href="{% url 'saved_files' %}" class="nav-br-buttons">Your work</a>
+            {% if user.is_authenticated %}
+                <a href="{% url 'log_out' %}" class="nav-br-buttons">Logout</a>
+            {% endif %}
         </div>
         <div class="media-upload">
             <div class="media-upload-container">
@@ -111,6 +114,12 @@
                 $('#upload-button').text('Upload');
             });
         });
+        document.addEventListener('DOMContentLoaded', () => {
+  const mainContainer = document.querySelector('.main-container');
+  setTimeout(() => {
+    mainContainer.classList.add('show'); // Add class to trigger animation
+  }, 100); // Delay to allow the initial state to take effect
+});
     </script>
 </body>
 </html>

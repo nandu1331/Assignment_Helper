@@ -26,6 +26,9 @@
         <a href="{% url 'index' %}">Home</a>
         <a href="{% url 'upload_pdf' %}">Upload Files</a>
         <a href="{% url 'saved_files' %}">Your Work</a>
+        {% if user.is_authenticated %}
+            <a href="{% url 'log_out' %}" class="nav-br-buttons">Logout</a>
+        {% endif %}
     </nav>
     <div class="main-container">
         {% if uploaded_files %}

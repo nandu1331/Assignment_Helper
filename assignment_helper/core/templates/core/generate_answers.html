@@ -1,5 +1,4 @@
 {% load static %}
-{% load custom_filters %}
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -197,10 +196,14 @@
             margin: 10px;
             transition: background-color 0.2s ease-in-out, transform 0.2s ease-in-out;
         }
+        .generate-answer-button a {
+            color: whitesmoke;
+        }
+        
         .generate-answer-button:hover {
-            box-shadow: 0 0 35px #06f863;
-            color: #06f863;
-            border-color: #06f863;
+            box-shadow: 0 0 35px rgb(157, 110, 245);
+            color: rgb(157, 110, 245);
+            border-color: rgb(157, 110, 245);
             transform: scale(1.1);
             cursor: pointer;
         }
@@ -213,15 +216,15 @@
             position: relative;
             z-index: 1;
         }
-        #i1, #i2 {
+        .i1, .i2 {
             position: absolute;
             inset: 0;
             display: block;
         }
-        #i1 {
+        .i1 {
             translate: 0% -6.6%;
         }
-        #i1::before {
+        .i1::before {
             content: "";
             position: absolute;
             top: 0;
@@ -232,14 +235,14 @@
             transform: translateX(50%) skewX(325deg);
             transition: 0.5s;
         }
-        .generate-answer-button:hover #i1::before {
+        .generate-answer-button:hover .i1::before {
             width: 20px;
             left: 20%;
         }
-        #i2 {
+        .i2 {
             translate: 0% 6.5%;
         }
-        #i2::after {
+        .i2::after {
             content: "";
             position: absolute;
             bottom: 0;
@@ -250,9 +253,16 @@
             transform: translateX(50%) skewX(325deg);
             transition: 0.5s;
         }
-        .generate-answer-button:hover #i2::after {
+        .generate-answer-button:hover .i2::after {
             width: 20px;
             left: 60%;
+        }
+        .button-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin-right: 30%;
+            justify-content: space-between;
         }
         @keyframes spin {
             0% { transform: rotate(0deg); }
@@ -279,7 +289,11 @@
         <a href="{% url 'index' %}">Home</a>
         <a href="{% url 'upload_pdf' %}">Upload Files</a>
         <a href="{% url 'saved_files' %}">Your Work</a>
+        {% if user.is_authenticated %}
+            <a href="{% url 'log_out' %}" class="nav-br-buttons">Logout</a>
+        {% endif %}
     </nav>
+
     <div class="main-container">
         <div class="question-answers-container">
             {% if question_answer_map %}
@@ -291,18 +305,13 @@
                     </div>
                     <div id="answer-{{ forloop.counter }}" class="answer">
                         {% if answer %}
-                            <ul>
-                                {% for sentence in answer|split_string:"." %}
-                                    <li>{{ sentence }}.</li> <!-- Add period back if needed -->
-                                {% endfor %}
-                            </ul>
-                            <br>
+                            <div>{{ answer|safe }}</div> <!-- Render stored HTML with |safe filter -->
                         {% else %}
                             <p>No answer available.</p>
                         {% endif %}
-                        <div class="loader"></div> <!-- Move Loading spinner here -->
+                        <div class="loader"></div>
                         <button class="generate-answer-button" data-question="{{ question|escapejs }}" data-answer-id="answer-{{ forloop.counter }}">
-                            <span>Re-generate Answer</span><i id="i1"></i><i id="i2"></i>
+                            <span>Re-generate Answer</span><i class="i1"></i><i class="i2"></i>
                         </button>
                     </div>
                 </div>
@@ -310,97 +319,119 @@
             {% else %}
                 <p>No questions found.</p>
             {% endif %}
+            <div class="button-container">
+                <button class="generate-answer-button" style="width: fit-content; text-align: center; margin-left: 45%;" id="download_button">
+                    <a href="{% url 'download_file' document.id %}" style="text-decoration: none;">
+                        <span>Download PDF</span><i class="i1"></i><i class="i2"></i>
+                    </a>
+                </button>
+                <button class="generate-answer-button" style="width: fit-content; text-align: center; margin-left: 45%;" id="deleted_button">
+                    <a href="{% url 'download_file' document.id %}" style="text-decoration: none;">
+                        <span>Delete PDF</span><i class="i1"></i><i class="i2"></i>
+                    </a>
+                </button>
+            </div>
         </div>
     </div>
+
     <script>
-        function toggleAnswer(event) {
-            const questionId = event.currentTarget.id;
-            const answerId = event.currentTarget.dataset.answerId;
-            const answerElement = document.getElementById(answerId);
-            const iconElement = event.currentTarget.querySelector('.toggle-icon');
+        document.addEventListener("DOMContentLoaded", function() {
+    const deleteButton = document.getElementById('deleted_button');
+    const downloadButton = document.getElementById('download_button');
 
-            if (answerElement.classList.contains('show')) {
-                // Hide the answer
-                answerElement.style.maxHeight = '0'; // Set max-height to 0
-                answerElement.style.opacity = '0'; // Fade out
-                answerElement.classList.remove('show');
-                iconElement.classList.remove('rotate');
-            } else {
-                // Show the answer
-                const answerHeight = answerElement.scrollHeight; // Get actual height
-                answerElement.style.maxHeight = `${answerHeight}px`; // Set max-height dynamically
-                answerElement.style.opacity = '1'; // Fade in
-                answerElement.classList.add('show');
-                iconElement.classList.add('rotate');
+    // Function to change colors on hover
+    function colorChange(button, isHover) {
+        const link = button.querySelector('a'); // Select the <a> inside the button
+
+        if (isHover) {
+            if (button === deleteButton) {
+                link.style.color = 'red'; // Change <a> color to red
+                button.style.borderColor = 'red'; // Change border color
+                button.style.boxShadow = '0 0 35px red'; // Change box shadow
+            } else if (button === downloadButton) {
+                link.style.color = 'blue'; // Change <a> color to blue
+                button.style.borderColor = 'blue'; // Change border color
+                button.style.boxShadow = '0 0 35px blue'; // Change box shadow
             }
+        } else {
+            link.style.color = 'white'; // Reset <a> color
+            button.style.borderColor = 'white'; // Reset border color
+            button.style.boxShadow = 'none'; // Reset box shadow
         }
+    }
 
-        document.addEventListener("DOMContentLoaded", function() {
-            const questions = document.querySelectorAll('.question');
-            questions.forEach(question => {
-                question.addEventListener('click', toggleAnswer);
-            });
-        });
+    // Add mouse events to buttons
+    deleteButton.addEventListener('mouseenter', () => colorChange(deleteButton, true));
+    deleteButton.addEventListener('mouseleave', () => colorChange(deleteButton, false));
+    downloadButton.addEventListener('mouseenter', () => colorChange(downloadButton, true));
+    downloadButton.addEventListener('mouseleave', () => colorChange(downloadButton, false));
 
-        // Add event listener to generate answer buttons
-        document.addEventListener("DOMContentLoaded", function() {
-            const generateAnswerButtons = document.querySelectorAll('.generate-answer-button');
-            generateAnswerButtons.forEach(button => {
-                button.addEventListener('click', generateAnswer);
-            });
-        });
-
-        // Function to generate answer
-        document.addEventListener("DOMContentLoaded", function() {
-            const generateAnswerButtons = document.querySelectorAll('.generate-answer-button');
-
-            generateAnswerButtons.forEach(button => {
-    button.addEventListener('click', function() {
-        const question = this.dataset.question;
-        const answerId = this.dataset.answerId;
+    // Function to toggle the answer display
+    function toggleAnswer(event) {
+        const questionId = event.currentTarget.id;
+        const answerId = event.currentTarget.dataset.answerId;
         const answerElement = document.getElementById(answerId);
-        const loader = answerElement.querySelector('.loader'); // Get the loader from the answer div
+        const iconElement = event.currentTarget.querySelector('.toggle-icon');
 
-        // Hide all elements in the answer div
-        answerElement.innerHTML = ''; // Clear the answer content
-        loader.style.display = 'inline-block'; // Show the loader
+        if (answerElement.classList.contains('show')) {
+            answerElement.style.maxHeight = '0';
+            answerElement.style.opacity = '0';
+            answerElement.classList.remove('show');
+            iconElement.classList.remove('rotate');
+        } else {
+            const answerHeight = answerElement.scrollHeight;
+            answerElement.style.maxHeight = `${answerHeight}px`;
+            answerElement.style.opacity = '1';
+            answerElement.classList.add('show');
+            iconElement.classList.add('rotate');
+        }
+    }
 
-        // Send the question to the backend to generate a new answer
-        fetch("{% url 'generate_answer' %}", {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRFToken': '{{ csrf_token }}'
-            },
-            body: JSON.stringify({ question: question })
-        })
-        .then(response => response.json())
-        .then(data => {
-            // Hide the loader
-            loader.style.display = 'none';
+    // Existing event listeners for questions
+    const questions = document.querySelectorAll('.question');
+    questions.forEach(question => {
+        question.addEventListener('click', toggleAnswer);
+    });
 
-            if (data.error) {
-                alert(`Error: ${data.error}`);
-            } else {
-                // Update the answer div with the new answer
-                answerElement.innerHTML = `<ul><li>${data.answer}</li></ul>`; // Assuming the response contains the answer
+    // Existing event listeners for answer generation buttons
+    const generateAnswerButtons = document.querySelectorAll('.generate-answer-button');
+    generateAnswerButtons.forEach(button => {
+        button.addEventListener('click', function() {
+            const question = this.dataset.question;
+            const answerId = this.dataset.answerId;
+            const answerElement = document.getElementById(answerId);
+            const loader = answerElement.querySelector('.loader');
 
-                // Show the answer
-                            const answerHeight = answerElement.scrollHeight; // Get actual height
-                            answerElement.style.maxHeight = `${answerHeight}px`; // Set max-height dynamically
-                            answerElement.style.opacity = '1'; // Fade in
-                            answerElement.classList.add('show'); // Add show class to make it visible
-                            answerElement.style.visibility = 'visible'; // Ensure it's visible
-                        }
-                    })
-                    .catch(error => {
-            // Hide the loader
-                        loader.style.display = 'none';
-                        alert(`Error occurred: ${error}`);
-                    });
-                });
+            answerElement.innerHTML = '';
+            loader.style.display = 'inline-block';
+
+            fetch("{% url 'generate_answer' %}", {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': '{{ csrf_token }}'
+                },
+                body: JSON.stringify({ question: question })
+            })
+            .then(response => response.json())
+            .then(data => {
+                loader.style.display = 'none';
+                if (data.error) {
+                    alert(`Error: ${data.error}`);
+                } else {
+                    answerElement.innerHTML = `<div>${data.answer}</div>`;
+                    answerElement.style.maxHeight = `${answerElement.scrollHeight}px`;
+                    answerElement.style.opacity = '1';
+                    answerElement.classList.add('show');
+                }
+            })
+            .catch(error => {
+                loader.style.display = 'none';
+                alert(`Error occurred: ${error}`);
             });
         });
+    });
+});
     </script>
 </body>
 </html>

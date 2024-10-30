@@ -105,7 +105,7 @@
         /* Button and prompt styling */
         .submit-button {
             width: 100%;
-            padding:  0.75rem;
+            padding: 0.75rem;
             background-color: #3182ce;
             color: #fff;
             border: none;
@@ -133,61 +133,52 @@
         .register-link:hover {
             text-decoration: underline;
         }
+
+        /* Error message styles */
+        .error {
+            color: red;
+            font-size: 0.875rem;
+            margin-top:  0.5rem;
+        }
     </style>
-    <title>Login</title>
+    <title>Sign up</title>
 </head>
 <body>
     <div class="container">
         <div class="card">
-            <h2 class="title">Login</h2>
-            <form class="form" action="{% url 'login' %}" method="post">
+            <h2 class="title">Sign up</h2>
+            <form class="form" action="{% url 'sign_up' %}" method="post">
                 {% csrf_token %}
+                {% if form.errors %}
+                    <div class="error">
+                        {{ form.errors|join:", " }}
+                    </div>
+                {% endif %}
                 <div class="input-group">
                     <label for="username">Username</label>
                     <input type="text" id="username" name="username" placeholder="Enter your username" required>
                 </div>
                 <div class="input-group">
+                    <label for="email">Email</label>
+                    <input type="email" id="email" name="email" placeholder="Enter your email" required>
+                </div>
+                <div class="input-group">
                     <label for="password">Password</label>
                     <input type="password" id="password" name="password" placeholder="Enter your password" required>
                 </div>
-                <div class="options">
-                    <label class="checkbox">
-                        <input type="checkbox" id="remember-me" name="remember_me">
-                        <span>Remember Me</span>
-                    </label>
-                    <a href="#" class="forgot-password">Forgot Password?</a>
+                <div class="input-group">
+                    <label for="confirm_password">Confirm Password</label>
+                    <input type="password" id="confirm_password" name="confirm_password" placeholder="Re-type your password" required>
                 </div>
-                <button type="submit" class="submit-button">Login</button>
+                <div class="options">
+                    <a href="#" class="forgot-password">Forgot Username?</a>
+                </div>
+                <button type="submit" class="submit-button">Sign up</button>
             </form>
             <p class="register-prompt">
-                Don't have an account? <a href="{% url 'sign_up' %}" class="register-link">Register</a>
+                Already have an account? <a href="{% url 'login' %}" class="register-link">Login</a> here
             </p>
         </div>
     </div>
-
-    <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            const usernameInput = document.getElementById('username');
-            const rememberMeCheckbox = document.getElementById('remember-me');
-
-            // Check if there's a saved username in local storage
-            const savedUsername = localStorage.getItem('savedUsername');
-            if (savedUsername) {
-                usernameInput.value = savedUsername; // Populate the username input
-                rememberMeCheckbox.checked = true; // Check the checkbox
-            }
-
-            // On form submission
-            document.querySelector('.form').addEventListener('submit', (event) => {
-                if (rememberMeCheckbox.checked) {
-                    // Save the username to local storage
-                    localStorage.setItem('savedUsername', usernameInput.value);
-                } else {
-                    // Clear the saved username if not checked
-                    localStorage.removeItem('savedUsername');
-                }
-            });
-        });
-    </script>
 </body>
 </html>
