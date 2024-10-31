@@ -377,14 +377,11 @@ def generate_answers(request):
 
         # Directly fetch new answers from the Gemini API using the actual questions
         answers = get_answers_from_gemini(questions_list) 
-        print("RAW API RESPONSE:\n", answers, "\n\n")
          # Pass the actual questions
         answers = clean_and_format_data(answers)
-        print("CLEANED API RESPONSE: \n", answers, "\n\n")
-        
+
         question_id_answer_map = {}
         ans_map = {idx + 1: answer for idx, answer in enumerate(answers)}
-        print("\n\n", ans_map, "\n\n")
         if answers:
             for question_id in question_ids:
                 if question_id in ans_map:
@@ -473,40 +470,53 @@ def get_cached_answers(question_ids):
             answers.append(None)
     return [answer for answer in answers if answer is not None]
 
+from groq import Groq
 
 def get_answers_from_gemini(questions):
-    print("Fetching answers from Gemini.")
+    print("Fetching answers from Groq.")
+    client = Groq()
+    prompt = "Generate long form answers for these questions and Generate each answer for each question in HTML format. Include the necessary tags to make it display-ready for web templates." + ', '.join(questions)
+
     try:
-        model = genai.GenerativeModel("gemini-1.5-flash")
-        response = model.generate_content(
-            'Generate brief answers for these questions in exam answer format: ' + ', '.join(questions)
+        completion = client.chat.completions.create(
+            model="llama3-8b-8192",
+            messages=[
+                {
+                    "role": "user",
+                    "content": prompt
+                }
+            ],
+            temperature=1,
+            max_tokens=4000,
+            top_p=1,
+            stream=False,  # Set to False to get the full response at once
+            stop=None,
         )
-        return response.text.strip()
-        
-    except google.api_core.exceptions.InvalidArgument as api_error:
-        print(f"API Key Invalid: {api_error}")
-        return ['API Key Invalid. Please check your credentials.']
+
+        # Correctly extract the content from the response
+        answers = completion.choices[0].message.content.strip()  # Use dot notation
+        return answers # Assuming each answer is on a new line
+
     except Exception as e:
-        print(f"An error occurred: {e}")
+        print("An error occurred:", e)
         return ['An error occurred. Please try again.']
 
-'''RESPONSE CLEANING PIPELINE'''
+
 import re
 
 def normalize_text(raw_text):
-    """ Normalize the text by removing unwanted characters and excessive whitespace. """
-    # Remove unwanted characters (e.g., newlines, extra spaces)
+    """Normalize text by removing unwanted characters and excessive whitespace."""
     normalized_text = re.sub(r'\s+', ' ', raw_text).strip()
     return normalized_text
 
 def extract_questions_and_answers(normalized_text):
-    """ Extract questions and their corresponding answers. """
+    """Extract questions and their corresponding answers from text."""
     # Pattern to detect questions
     question_pattern = re.compile(r'(\*\*\d+\.\s.+?:|\*\*\d+\.\s\w+\s*\w+)', re.MULTILINE)
     questions = question_pattern.split(normalized_text)
     
     qa_pairs = []
-    for i in range(1, len(questions), 2):  # We expect pairs (question, answer)
+    for i in range(1, len(questions), 2):  # Expect pairs (question, answer)
         question = questions[i].strip()
         answer = questions[i + 1].strip() if (i + 1) < len(questions) else ""
         question_cleaned = question.replace('**', '').strip() if question.startswith('**') else question
@@ -515,30 +525,47 @@ def extract_questions_and_answers(normalized_text):
     
     return qa_pairs
 
-def clean_and_format_data(raw_text):
-    """ Main function to clean and format the API response. """
-    # Step 1: Normalize text
-    normalized_text = normalize_text(raw_text)
+def clean_and_format_data(raw_response):
+    """Clean and format raw response data into structured sections with HTML formatting."""
+    raw_response = raw_response.strip()
+    sections = re.split(r'\n\s*\n', raw_response)  # Split into sections based on blank lines
     
-    # Step 2: Extract questions and answers
-    qa_pairs = extract_questions_and_answers(normalized_text)
+    cleaned_data = []
+    for section in sections:
+        lines = section.strip().split('\n')
+        
+        if not lines:
+            continue  # Skip empty sections
 
-    cleaned_responses = []
+        title = lines[0].strip()
+        content = '\n'.join(line.strip() for line in lines[1:] if line.strip())
+        content = clean_content(content)
+        
+        if title and content:
+            cleaned_data.append({'title': title, 'content': content})
     
-    # Step 3: Format extracted questions and answers
-    for question, answer in qa_pairs:
-        if question and answer:  # Ensure both question and answer are non-empty
-            # Format question as a heading
-            formatted_answer = f"<strong>{question}</strong><ul>"
-            
-            # Split the answer into bullet points
-            bullets = re.split(r'\*\s*', answer)  # Splitting by bullet points (using '*')
-            formatted_bullets = "".join(f"<li>{bullet.strip()}</li>" for bullet in bullets if bullet.strip())
-            
-            formatted_answer += formatted_bullets + "</ul>"
-            cleaned_responses.append(formatted_answer)
+    return convert_to_html(cleaned_data)
+
+def clean_content(content):
+    """Perform advanced content cleaning on text content."""
+    content = re.sub(r'\s+', ' ', content).strip()  # Normalize whitespace
+    content = re.sub(r'Here are the answers in medium form:', '', content, flags=re.IGNORECASE).strip()
     
-    return cleaned_responses
+    # Normalize bullet points and numbered lists
+    content = re.sub(r'(\d+)\. ', r'**\1. ** ', content)  # Bold numbered lists
+    content = re.sub(r'\*\s+', '* ', content)  # Ensure bullet points have a space after *
+
+    return content
+
+def convert_to_html(cleaned_data):
+    """Convert cleaned data into HTML format."""
+    html_data = []
+    for entry in cleaned_data:
+        title_html = f"<strong>{entry['title']}</strong>"
+        content_html = f"<p>{entry['content']}</p>"
+        html_data.append(f"{title_html}\n{content_html}")
+    
+    return html_data
 
 
 '''QUESTION EXTRACTION PIPELINE'''

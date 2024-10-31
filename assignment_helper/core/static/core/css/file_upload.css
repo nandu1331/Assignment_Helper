@@ -1,24 +1,90 @@
-.nav-bar {
-    display: flexbox;
-    flex-direction: row;
-    justify-content: space-between;
+.nav {
+  display: flex;
+  justify-content: space-around; /* Space out navigation items */
+  align-items: center; /* Center items vertically */
+  padding: 15px 5%; /* Add horizontal padding for better spacing */
+  background: linear-gradient(135deg, rgba(0, 0, 0, 0.1), rgba(0, 0, 0, 0.3)); /* Gradient background */
+  width: 80%; /* Full width of the body */
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3); /* Enhanced shadow for depth */
+  position: relative; /* Relative positioning for pseudo-elements */
+  z-index: 1000; /* Ensure the nav is above other elements */
+  opacity: 0; /* Start hidden */
+  animation: fadeIn 1s forwards; /* Animation to fade in */
+}
+
+/* Fade-in animation for the nav */
+@keyframes fadeIn {
+  0% {
+      opacity: 0;
+      transform: translateY(-20px); /* Start slightly above */
   }
-  
-  .nav-br-buttons {
-    text-decoration: none;
-    background-color: #7C3AFF; /* added background color */
-    color: #fff; /* added text color */
-    padding: 10px 20px; /* added padding */
-    border: none; /* added border */
-    border-radius: 10px; /* added border radius */
-    cursor: pointer; /* added cursor pointer */
-    transition: background-color 0.2s ease-in-out;
-    gap: 20px;
+  100% {
+      opacity: 1;
+      transform: translateY(0); /* End at original position */
   }
-  
-  .nav-br-buttons:hover {
-    background-color: #4412A5;
+}
+
+/* Navigation Link Styles */
+.nav a {
+  background: linear-gradient(135deg, #7C3AFF, #9b59b6); /* Gradient background for links */
+  padding: 10px 20px; /* Padding for better touch targets */
+  color: #fff; /* Text color */
+  text-decoration: none; /* Remove underline from links */
+  text-align: center; /* Center text */
+  border-radius: 15px; /* Rounded corners for links */
+  transition: transform 0.3s ease, box-shadow 0.3s ease, background 0.3s ease; /* Smooth transitions */
+  display: inline-block; /* Ensures padding is applied correctly */
+  position: relative; /* For positioning pseudo-elements */
+  opacity: 0; /* Start hidden */
+  animation: slideIn 0.5s forwards; /* Animation for each link */
+}
+
+/* Animation for each link */
+@keyframes slideIn {
+  0% {
+      opacity: 0;
+      transform: translateX(50px); /* Start from the right */
   }
+  100% {
+      opacity: 1;
+      transform: translateX(0); /* End at original position */
+  }
+}
+
+/* Delay the animation for the first half of the nav items */
+.nav a:nth-child(-n+2) {
+  animation-delay: 0.1s; /* Delay for the first two items */
+}
+
+/* Delay the animation for the second half of the nav items */
+.nav a:nth-child(n+3) {
+  animation-delay: 0.3s; /* Delay for the next items */
+}
+
+/* 3D Hover Effects for Links */
+.nav a:hover {
+  transform: translateY(-5px) rotateX(5deg) rotateY(5deg); /* 3D lift effect */
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4); /* Deeper shadow on hover */
+}
+
+/* Pseudo-element for 3D Effect */
+.nav a::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(255, 255, 255, 0.2); /* Light overlay for depth */
+  border-radius: 15px; /* Match the border radius */
+  transform: scale(0); /* Start hidden */
+  transition: transform 0.3s ease; /* Smooth transition */
+  z-index: 0; /* Behind the text */
+}
+
+.nav a:hover::before {
+  transform: scale(1); /* Show overlay on hover */
+}
   
   @keyframes fadeInFromBottom {
     0% {

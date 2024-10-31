@@ -48,7 +48,7 @@
                                 data-file-name="{{ file.name }}" 
                                 data-uploaded-at="{{ file.uploaded_at }}" 
                                 data-file-preview="{{ file.preview.url }}" 
-                                data-file-details="This is a sample detail for {{ file.name }}.">
+                                data-file-details="No of questions {{ file.question_count }}">
                                 <td>{{ file.name }}</td>
                                 <td>{{ file.uploaded_at }}</td>
                             </tr>
@@ -60,8 +60,10 @@
                 <div class="file-preview-img" id="filePreviewImg"></div>
                 <div class="file-details-and-edit">
                     <div class="file-text-details" id="fileTextDetails"></div>
-                    <a href="#" class="edit-button">Edit</a>
-                    <a href="#" id="viewAnswersButton" class="edit-button">View</a>
+                    <div class="button-container">
+                        <a href="#" class="edit-button">Edit</a>
+                        <a href="#" id="viewAnswersButton" class="edit-button">View</a>
+                    </div>
                 </div>
             </div>
         </div>
@@ -73,18 +75,25 @@
     </div>
 
     <script>
+        // Function to select the first file row on page load
+        function selectFirstRow() {
+            const firstRow = document.querySelector('.file-row');
+            if (firstRow) {
+                firstRow.click(); // Simulate a click on the first row
+            }
+        }
+    
+        // Add event listeners to each file row
         document.querySelectorAll('.file-row').forEach(row => {
             row.addEventListener('click', function() {
-                // Remove inline styles from all rows
+                // Remove 'selected' class from all rows
                 document.querySelectorAll('.file-row').forEach(r => {
-                    r.style.backgroundColor = ''; // Reset background color
-                    r.style.color = ''; // Reset text color
+                    r.classList.remove('selected');
                 });
-        
-                // Set inline styles for the clicked row
-                this.style.backgroundColor = 'rgba(85, 9, 157, 0.7)'; // Change to your desired color
-                this.style.color = 'white'; // Ensure text is readable
-        
+                
+                // Add 'selected' class to the clicked row
+                this.classList.add('selected');
+                
                 // Get file details from data attributes
                 const fileName = this.getAttribute('data-file-name');
                 const uploadedAt = this.getAttribute('data-uploaded-at');
@@ -92,7 +101,7 @@
                 const fileDetails = this.getAttribute('data-file-details');
                 const fileId = this.getAttribute('data-file-id');
                 console.log('File ID:', fileId);
-        
+                
                 // Update the file details section
                 document.getElementById('filePreviewImg').style.backgroundImage = `url(${filePreview})`;
                 document.getElementById('fileTextDetails').innerHTML = `
@@ -112,6 +121,9 @@
                 document.getElementById('viewAnswersButton').href = "{% url 'view_answers' file_id=0 %}".replace('0', fileId);
             });
         });
+    
+        // Call the function to select the first row on page load
+        window.onload = selectFirstRow;
     </script>
 </body>
 </html>
