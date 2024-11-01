@@ -22,6 +22,7 @@ body {
     z-index: 1000; /* Ensure the nav is above other elements */
     opacity: 0; /* Start hidden */
     animation: fadeIn 1s forwards; /* Animation to fade in */
+    margin-left: 10%;
 }
 
 /* Fade-in animation for the nav */

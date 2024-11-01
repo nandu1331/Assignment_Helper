@@ -229,7 +229,7 @@ def delete_file(request, file_id):
 
     document.delete()
     print(f"Document with ID {file_id} deleted.")
-    return redirect('upload_pdf')
+    return redirect('saved_files')
 
 @login_required
 def download_file(request, file_id):
@@ -257,31 +257,40 @@ def download_file(request, file_id):
 @login_required
 def view_answers(request, file_id):
     print(f"Viewing answers for file with ID: {file_id}.")
+    
+    # Get the document for the logged-in user
     document = get_object_or_404(Document, id=file_id, user=request.user)  # Filter by logged-in user
 
-    answers = document.api_responses.all()  
-    questions = [response.question for response in answers]
-    formatted_answers = [response.answer for response in answers]
-
-    # Extract question IDs from the APIResponse objects
-    question_ids = [response.question_id for response in answers]
+    # Filter answers specific to the document and user
+    answers = document.api_responses.filter(user=request.user)  # Ensure to filter by user
+    question_answer_map = {}
 
     # Create a question_answer_map using question IDs as keys and formatted answers as values
-    question_answer_map = {}
-    for question_id in question_ids:
-        if question_id <= len(formatted_answers):  # Ensure the index is valid
-            question_answer_map[questions[question_id - 1]] = formatted_answers[question_id - 1]
+    for response in answers:
+        question_id = response.question_id  # Get the question ID
+        question_text = response.question  # Get the question text
+        formatted_answer = response.answer  # Get the formatted answer
+
+        # Map question ID to its corresponding answer
+        question_answer_map[question_id] = {
+            'question': question_text,
+            'answer': formatted_answer
+        }
 
     pdf_file_path = os.path.join(settings.MEDIA_ROOT, f"answers/answers_{document.id}.pdf")
     if not os.path.exists(pdf_file_path):
-        pdf_file_path = generate_question_bank_pdf(questions, formatted_answers, document.id)
+        pdf_file_path = generate_question_bank_pdf(
+            [item['question'] for item in question_answer_map.values()],
+            [item['answer'] for item in question_answer_map.values()],
+            document.id
+        )
 
     return render(request, 'core/generate_answers.html', {
         'document': document,
         'question_answer_map': question_answer_map,
         'pdf_file_path': pdf_file_path,
         'viewing_answers': True,
-        'formatted_answers': formatted_answers,
+        'document_id' : document.id,
     })
 
 @login_required
@@ -316,33 +325,48 @@ def update_questions(request):
 
     return JsonResponse({'error': "Invalid request method."}, status=400)
 
+from django.http import HttpResponseBadRequest
+
 @login_required
 def generate_answer(request):
-    print("Generating answer for specific question.")
     if request.method == 'POST':
         try:
-            question_data = json.loads(request.body)
-            question = question_data.get('question')
+            data = json.loads(request.body)
+            question_id = data.get('question_id')
+            document_id = data.get('document_id')
+            ans_detailing = data.get('ans_detailing')  # Assuming you send document_id in the request
+            print(document_id)
 
-            if not question:
-                return JsonResponse({'error': 'No question provided.'}, status=400)
+            print("QUESTION ID:\n\n", question_id, document_id)
+
+            if not question_id or not document_id:
+                return HttpResponseBadRequest('No question ID or document ID provided.')
+
+            # Fetch the Document based on the document_id
+            document = get_object_or_404(Document, id=document_id)
+
+            # Now fetch the APIResponse for the specific document and question_id
+            api_response = get_object_or_404(APIResponse, document=document, question_id=question_id)
+
+            question_text = api_response.question  # Get the question text
 
             # Fetch answer from the Gemini API
-            answer = get_answers_from_gemini([question])
-            answer = clean_and_format_data(answer)
+            answer = get_answers_from_gemini([question_text], ans_detailing)
             
-
+            answer = clean_single_answer_response(answer)
+            print(answer)
+            
             if answer and isinstance(answer, list) and len(answer) > 0:
-                api_response = APIResponse.objects.get(question=question, user=request.user)  # Filter by logged-in user
                 api_response.answer = answer[0]
                 api_response.save()
-                return JsonResponse({'answer': answer[0]})  # Return the first answer
+                
+                return render(request, 'core/answer_snippet.html', {'answer': answer[0]})
             else:
-                return JsonResponse({'error': 'No answer generated.'}, status=400)
+                return HttpResponseBadRequest('No answer generated.')
 
         except json.JSONDecodeError:
-            return JsonResponse({'error': 'Invalid JSON format.'}, status=400)
-    return JsonResponse({'error': 'Invalid request method.'}, status=405)
+            return HttpResponseBadRequest('Invalid JSON format.')
+    return HttpResponseBadRequest('Invalid request method.')
 
 @login_required
 def generate_answers(request):
@@ -379,6 +403,7 @@ def generate_answers(request):
         answers = get_answers_from_gemini(questions_list) 
          # Pass the actual questions
         answers = clean_and_format_data(answers)
+        print("SPI RESPONSE:\n\n", answers)
 
         question_id_answer_map = {}
         ans_map = {idx + 1: answer for idx, answer in enumerate(answers)}
@@ -472,10 +497,10 @@ def get_cached_answers(question_ids):
 
 from groq import Groq
 
-def get_answers_from_gemini(questions):
+def get_answers_from_gemini(questions, ans_detailing):
     print("Fetching answers from Groq.")
     client = Groq()
-    prompt = "Generate long form answers for these questions and Generate each answer for each question in HTML format. Include the necessary tags to make it display-ready for web templates." + ', '.join(questions)
+    prompt = f"Generate medium form answers for these questions and Generate each answer for each question in HTML format. Include the necessary tags to make it display-ready for web templates." + ', '.join(questions)
 
     try:
         completion = client.chat.completions.create(
@@ -501,64 +526,73 @@ def get_answers_from_gemini(questions):
         print("An error occurred:", e)
         return ['An error occurred. Please try again.']
 
+'''CLEANING PIPELINE'''
+from bs4 import BeautifulSoup
 
-import re
+def clean_single_answer_response(response_text):
+    """Clean and format the response treating the entire content as a single answer."""
+    response_patterns = [
+        r'Here is the answer to the question.*',  # General introductory phrases
+        r'I hope this helps!',  # Closing phrases
+        r'Let me know if you have any further questions or need any modifications.',  # Closing suggestion
+        r'In summary,.*',  # Summary or conclusion starters
+        r'Here are some insights.*',  # Introductory insight phrases
+        r'The following are key points.*',  # Key points starters
+        r'Additionally,.*',  # Additional info starters
+        r'Please note that.*',  # Notes or disclaimers
+        # Add additional patterns as needed for other chatbot response phrases
+    ]
+    
+    combined_pattern = re.compile('|'.join(response_patterns), re.IGNORECASE)
+    cleaned_response = combined_pattern.sub('', response_text)
+    soup = BeautifulSoup(cleaned_response, "html.parser")
+    
+    # Remove specific unwanted tags while preserving their content
+    for tag in soup.find_all(['code', 'q']):
+        tag.unwrap()  # Remove <code> and <q> tags but keep the content
+    
+    # Convert the cleaned HTML back to a string
+    cleaned_answer = str(soup)
+    
+    # Return the cleaned answer wrapped in a list
+    return [cleaned_answer]
 
 def normalize_text(raw_text):
-    """Normalize text by removing unwanted characters and excessive whitespace."""
-    normalized_text = re.sub(r'\s+', ' ', raw_text).strip()
-    return normalized_text
+    """Minimal normalization for HTML-formatted content."""
+    # Remove unnecessary whitespace
+    return re.sub(r'\s+', ' ', raw_text).strip()
 
 def extract_questions_and_answers(normalized_text):
-    """Extract questions and their corresponding answers from text."""
-    # Pattern to detect questions
-    question_pattern = re.compile(r'(\*\*\d+\.\s.+?:|\*\*\d+\.\s\w+\s*\w+)', re.MULTILINE)
-    questions = question_pattern.split(normalized_text)
+    """Extract questions and answers from HTML content."""
+    soup = BeautifulSoup(normalized_text, "html.parser")
+    questions = soup.find_all(['h2', 'h3'])
     
     qa_pairs = []
-    for i in range(1, len(questions), 2):  # Expect pairs (question, answer)
-        question = questions[i].strip()
-        answer = questions[i + 1].strip() if (i + 1) < len(questions) else ""
-        question_cleaned = question.replace('**', '').strip() if question.startswith('**') else question
-        answer_cleaned = re.sub(r'^\s*Answer:\s*', '', answer, flags=re.IGNORECASE).strip()
-        qa_pairs.append((question_cleaned, answer_cleaned))
+    for question in questions:
+        answer_content = ""
+        sibling = question.find_next_sibling()
+        
+        while sibling and sibling.name not in ['h2', 'h3']:
+            answer_content += str(sibling)
+            sibling = sibling.find_next_sibling()
+        
+        qa_pairs.append((question.get_text(strip=True), answer_content.strip()))
     
     return qa_pairs
 
 def clean_and_format_data(raw_response):
-    """Clean and format raw response data into structured sections with HTML formatting."""
-    raw_response = raw_response.strip()
-    sections = re.split(r'\n\s*\n', raw_response)  # Split into sections based on blank lines
+    """Directly use HTML content to structure data with HTML formatting."""
+    normalized_text = normalize_text(raw_response)
+    qa_pairs = extract_questions_and_answers(normalized_text)
     
-    cleaned_data = []
-    for section in sections:
-        lines = section.strip().split('\n')
-        
-        if not lines:
-            continue  # Skip empty sections
-
-        title = lines[0].strip()
-        content = '\n'.join(line.strip() for line in lines[1:] if line.strip())
-        content = clean_content(content)
-        
-        if title and content:
-            cleaned_data.append({'title': title, 'content': content})
+    structured_data = []
+    for question, answer in qa_pairs:
+        structured_data.append({'title': question, 'content': answer})
     
-    return convert_to_html(cleaned_data)
-
-def clean_content(content):
-    """Perform advanced content cleaning on text content."""
-    content = re.sub(r'\s+', ' ', content).strip()  # Normalize whitespace
-    content = re.sub(r'Here are the answers in medium form:', '', content, flags=re.IGNORECASE).strip()
-    
-    # Normalize bullet points and numbered lists
-    content = re.sub(r'(\d+)\. ', r'**\1. ** ', content)  # Bold numbered lists
-    content = re.sub(r'\*\s+', '* ', content)  # Ensure bullet points have a space after *
-
-    return content
+    return convert_to_html(structured_data)
 
 def convert_to_html(cleaned_data):
-    """Convert cleaned data into HTML format."""
+    """Format structured data into the final HTML format."""
     html_data = []
     for entry in cleaned_data:
         title_html = f"<strong>{entry['title']}</strong>"

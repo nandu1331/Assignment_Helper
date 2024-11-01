@@ -38,98 +38,98 @@
         }
 
         .nav {
-    display: flex;
-    justify-content: space-around; /* Space out navigation items */
-    align-items: center; /* Center items vertically */
-    padding: 15px 5%; /* Add horizontal padding for better spacing */
-    background: linear-gradient(135deg, rgba(0, 0, 0, 0.1), rgba(0, 0, 0, 0.3)); /* Gradient background */
-    width: 80%; /* Full width of the body */
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3); /* Enhanced shadow for depth */
-    position: relative; /* Relative positioning for pseudo-elements */
-    z-index: 1000; /* Ensure the nav is above other elements */
-    opacity: 0; /* Start hidden */
-    animation: fadeIn 1s forwards; /* Animation to fade in */
-}
+            display: flex;
+            justify-content: space-around; /* Space out navigation items */
+            align-items: center; /* Center items vertically */
+            padding: 15px 5%; /* Add horizontal padding for better spacing */
+            background: linear-gradient(135deg, rgba(0, 0, 0, 0.1), rgba(0, 0, 0, 0.3)); /* Gradient background */
+            width: 80%; /* Full width of the body */
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3); /* Enhanced shadow for depth */
+            position: relative; /* Relative positioning for pseudo-elements */
+            z-index: 1000; /* Ensure the nav is above other elements */
+            opacity: 0; /* Start hidden */
+            animation: fadeIn 1s forwards; /* Animation to fade in */
+        }
 
-/* Fade-in animation for the nav */
-@keyframes fadeIn {
-    0% {
-        opacity: 0;
-        transform: translateY(-20px); /* Start slightly above */
-    }
-    100% {
-        opacity: 1;
-        transform: translateY(0); /* End at original position */
-    }
-}
+        /* Fade-in animation for the nav */
+        @keyframes fadeIn {
+            0% {
+                opacity: 0;
+                transform: translateY(-20px); /* Start slightly above */
+            }
+            100% {
+                opacity: 1;
+                transform: translateY(0); /* End at original position */
+            }
+        }
 
-/* Navigation Link Styles */
-.nav a {
-    background: linear-gradient(135deg, #7C3AFF, #9b59b6); /* Gradient background for links */
-    padding: 10px 20px; /* Padding for better touch targets */
-    color: #fff; /* Text color */
-    text-decoration: none; /* Remove underline from links */
-    text-align: center; /* Center text */
-    border-radius: 15px; /* Rounded corners for links */
-    transition: transform 0.3s ease, box-shadow 0.3s ease, background 0.3s ease; /* Smooth transitions */
-    display: inline-block; /* Ensures padding is applied correctly */
-    position: relative; /* For positioning pseudo-elements */
-    opacity: 0; /* Start hidden */
-    animation: slideIn 0.5s forwards; /* Animation for each link */
-}
+        /* Navigation Link Styles */
+        .nav a {
+            background: linear-gradient(135deg, #7C3AFF, #9b59b6); /* Gradient background for links */
+            padding: 10px 20px; /* Padding for better touch targets */
+            color: #fff; /* Text color */
+            text-decoration: none; /* Remove underline from links */
+            text-align: center; /* Center text */
+            border-radius: 15px; /* Rounded corners for links */
+            transition: transform 0.3s ease, box-shadow 0.3s ease, background 0.3s ease; /* Smooth transitions */
+            display: inline-block; /* Ensures padding is applied correctly */
+            position: relative; /* For positioning pseudo-elements */
+            opacity: 0; /* Start hidden */
+            animation: slideIn 0.5s forwards; /* Animation for each link */
+        }
 
-/* Animation for each link */
-@keyframes slideIn {
-    0% {
-        opacity: 0;
-        transform: translateX(50px); /* Start from the right */
-    }
-    100% {
-        opacity: 1;
-        transform: translateX(0); /* End at original position */
-    }
-}
+        /* Animation for each link */
+        @keyframes slideIn {
+            0% {
+                opacity: 0;
+                transform: translateX(50px); /* Start from the right */
+            }
+            100% {
+                opacity: 1;
+                transform: translateX(0); /* End at original position */
+            }
+        }
 
-/* Delay the animation for the first half of the nav items */
-.nav a:nth-child(-n+2) {
-    animation-delay: 0.1s; /* Delay for the first two items */
-}
+        /* Delay the animation for the first half of the nav items */
+        .nav a:nth-child(-n+2) {
+            animation-delay: 0.1s; /* Delay for the first two items */
+        }
 
-/* Delay the animation for the second half of the nav items */
-.nav a:nth-child(n+3) {
-    animation-delay: 0.3s; /* Delay for the next items */
-}
+        /* Delay the animation for the second half of the nav items */
+        .nav a:nth-child(n+3) {
+            animation-delay: 0.3s; /* Delay for the next items */
+        }
 
-/* 3D Hover Effects for Links */
-.nav a:hover {
-    transform: translateY(-5px) rotateX(5deg) rotateY(5deg); /* 3D lift effect */
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4); /* Deeper shadow on hover */
-}
+        /* 3D Hover Effects for Links */
+        .nav a:hover {
+            transform: translateY(-5px) rotateX(5deg) rotateY(5deg); /* 3D lift effect */
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4); /* Deeper shadow on hover */
+        }
 
-/* Pseudo-element for 3D Effect */
-.nav a::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: rgba(255, 255, 255, 0.2); /* Light overlay for depth */
-    border-radius: 15px; /* Match the border radius */
-    transform: scale(0); /* Start hidden */
-    transition: transform 0.3s ease; /* Smooth transition */
-    z-index: 0; /* Behind the text */
-}
+        /* Pseudo-element for 3D Effect */
+        .nav a::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(255, 255, 255, 0.2); /* Light overlay for depth */
+            border-radius: 15px; /* Match the border radius */
+            transform: scale(0); /* Start hidden */
+            transition: transform 0.3s ease; /* Smooth transition */
+            z-index: 0; /* Behind the text */
+        }
 
-.nav a:hover::before {
-    transform: scale(1); /* Show overlay on hover */
-}
-.document-name {
-    color: white;
-    letter-spacing: 0.1em;
-    font-weight: 500;
-    font-family: 'Poppins', sans-serif;
-}
+        .nav a:hover::before {
+            transform: scale(1); /* Show overlay on hover */
+        }
+        .document-name {
+            color: white;
+            letter-spacing: 0.1em;
+            font-weight: 500;
+            font-family: 'Poppins', sans-serif;
+        }
         .question-answers-container {
             display: flex;
             flex-direction: column;
@@ -198,6 +198,9 @@
             visibility: hidden; /* Start hidden */
             transition: max-height var(--transition-speed), opacity var(--transition-speed), visibility var(--transition-speed);
         }
+        .answer-text {
+            display: block;
+        }
 
         .answer.show {
             max-height: var(--max-answer-height); /* Set to a value that accommodates most content */
@@ -218,7 +221,7 @@
             transform: rotate(90deg);
         }
         .loader {
-            border: 4px solid rgba(255, 255, 255, 0.3);
+            border: 4px solid rgba(255, 255, 255 , 0.3);
             border-top: 4px solid var(--primary-color);
             border-radius: 50%;
             width: 24px;
@@ -297,7 +300,7 @@
         }
         .generate-answer-button:hover .i2::after {
             width: 20px;
-            left: 60%;
+            left:  60%;
         }
         .button-container {
             display: flex;
@@ -339,20 +342,20 @@
     <div class="main-container">
         <div class="question-answers-container">
             {% if question_answer_map %}
-                {% for question, answer in question_answer_map.items %}
+                {% for question_id, qa in question_answer_map.items %}
                 <div class="question-answers-area">
-                    <div id="question-{{ forloop.counter }}" class="question" data-answer-id="answer-{{ forloop.counter }}">
-                        {{ question|capfirst }}
+                    <div id="question-{{ question_id }}" class="question" data-answer-id="answer-{{ question_id }}">
+                        {{ qa.question|capfirst }}
                         <i class="toggle-icon fa fa-caret-down"></i>
                     </div>
-                    <div id="answer-{{ forloop.counter }}" class="answer">
-                        {% if answer %}
-                            <div>{{ answer|safe }}</div> <!-- Render stored HTML with |safe filter -->
+                    <div id="answer-{{ question_id }}" class="answer">
+                        {% if qa.answer %}
+                            <div class="answer-text">{{ qa.answer|safe }}</div> <!-- Render stored HTML with |safe filter -->
                         {% else %}
-                            <p>No answer available.</p>
+                            <p class="no-answer">No answer available.</p>
                         {% endif %}
-                        <div class="loader"></div>
-                        <button class="generate-answer-button" data-question="{{ question|escapejs }}" data-answer-id="answer-{{ forloop.counter }}">
+                        <div class="loader" id="loader-{{ question_id }}"></div>
+                        <button class="generate-answer-button" data-question-id="{{ question_id }}" data-answer-id="answer-{{ question_id }}">
                             <span>Re-generate Answer</span><i class="i1"></i><i class="i2"></i>
                         </button>
                     </div>
@@ -363,12 +366,12 @@
             {% endif %}
             <div class="button-container">
                 <button class="generate-answer-button" style="width: fit-content; text-align: center; margin-left: 45%;" id="download_button">
-                    <a href="#" style="text-decoration: none;">
+                    <a href="{% url 'download_file' document.id %}" style="text-decoration: none;">
                         <span>Download PDF</span><i class="i1"></i><i class="i2"></i>
                     </a>
                 </button>
                 <button class="generate-answer-button" style="width: fit-content; text-align: center; margin-left: 45%;" id="deleted_button">
-                    <a href="#" style="text-decoration: none;">
+                    <a href="{% url 'delete_file' document.id %}" style="text-decoration: none;">
                         <span>Delete PDF</span><i class="i1"></i><i class="i2"></i>
                     </a>
                 </button>
@@ -378,102 +381,128 @@
 
     <script>
         document.addEventListener("DOMContentLoaded", function() {
-    const deleteButton = document.getElementById('deleted_button');
-    const downloadButton = document.getElementById('download_button');
+            const documentId = "{{ document.id }}";
+            console.log(documentId);
+            const deleteButton = document.getElementById('deleted_button');
+            const downloadButton = document.getElementById('download_button');
 
-    // Function to change colors on hover
-    function colorChange(button, isHover) {
-        const link = button.querySelector('a'); // Select the <a> inside the button
+            // Function to change colors on hover
+            function colorChange(button, isHover) {
+                const link = button.querySelector('a'); // Select the <a> inside the button
 
-        if (isHover) {
-            if (button === deleteButton) {
-                link.style.color = 'red'; // Change <a> color to red
-                button.style.borderColor = 'red'; // Change border color
-                button.style.boxShadow = '0 0 35px red'; // Change box shadow
-            } else if (button === downloadButton) {
-                link.style.color = 'blue'; // Change <a> color to blue
-                button.style.borderColor = 'blue'; // Change border color
-                button.style.boxShadow = '0 0 35px blue'; // Change box shadow
-            }
-        } else {
-            link.style.color = 'white'; // Reset <a> color
-            button.style.borderColor = 'white'; // Reset border color
-            button.style.boxShadow = 'none'; // Reset box shadow
-        }
-    }
-
-    // Add mouse events to buttons
-    deleteButton.addEventListener('mouseenter', () => colorChange(deleteButton, true));
-    deleteButton.addEventListener('mouseleave', () => colorChange(deleteButton, false));
-    downloadButton.addEventListener('mouseenter', () => colorChange(downloadButton, true));
-    downloadButton.addEventListener('mouseleave', () => colorChange(downloadButton, false));
-
-    // Function to toggle the answer display
-    function toggleAnswer(event) {
-        const questionId = event.currentTarget.id;
-        const answerId = event.currentTarget.dataset.answerId;
-        const answerElement = document.getElementById(answerId);
-        const iconElement = event.currentTarget.querySelector('.toggle-icon');
-
-        if (answerElement.classList.contains('show')) {
-            answerElement.style.maxHeight = '0';
-            answerElement.style.opacity = '0';
-            answerElement.classList.remove('show');
-            iconElement.classList.remove('rotate');
-        } else {
-            const answerHeight = answerElement.scrollHeight;
-            answerElement.style.maxHeight = `${answerHeight}px`;
-            answerElement.style.opacity = '1';
-            answerElement.classList.add('show');
-            iconElement.classList.add('rotate');
-        }
-    }
-
-    // Existing event listeners for questions
-    const questions = document.querySelectorAll('.question');
-    questions.forEach(question => {
-        question.addEventListener('click', toggleAnswer);
-    });
-
-    // Existing event listeners for answer generation buttons
-    const generateAnswerButtons = document.querySelectorAll('.generate-answer-button');
-    generateAnswerButtons.forEach(button => {
-        button.addEventListener('click', function() {
-            const question = this.dataset.question;
-            const answerId = this.dataset.answerId;
-            const answerElement = document.getElementById(answerId);
-            const loader = answerElement.querySelector('.loader');
-
-            answerElement.innerHTML = '';
-            loader.style.display = 'inline-block';
-
-            fetch("{% url 'generate_answer' %}", {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRFToken': '{{ csrf_token }}'
-                },
-                body: JSON.stringify({ question: question })
-            })
-            .then(response => response.json())
-            .then(data => {
-                loader.style.display = 'none';
-                if (data.error) {
-                    alert(`Error: ${data.error}`);
+                if (isHover) {
+                    if (button === deleteButton) {
+                        link.style.color = 'red'; // Change <a> color to red
+                        button.style.borderColor = 'red'; // Change border color
+                        button.style.boxShadow = '0 0 35px red'; // Change box shadow
+                    } else if (button === downloadButton) {
+                        link.style.color = 'blue'; // Change <a> color to blue
+                        button.style.borderColor = 'blue'; // Change border color
+                        button.style.boxShadow = '0 0 35px blue'; // Change box shadow
+                    }       
                 } else {
-                    answerElement.innerHTML = `<div>${data.answer}</div>`;
-                    answerElement.style.maxHeight = `${answerElement.scrollHeight}px`;
+                    link.style.color = 'white'; // Reset <a> color
+                    button.style.borderColor = 'white'; // Reset border color
+                    button.style.boxShadow = 'none'; // Reset box shadow
+                }
+            }
+
+            // Add mouse events to buttons
+ deleteButton.addEventListener('mouseenter', () => colorChange(deleteButton, true));
+            deleteButton.addEventListener('mouseleave', () => colorChange(deleteButton, false));
+            downloadButton.addEventListener('mouseenter', () => colorChange(downloadButton, true));
+            downloadButton.addEventListener('mouseleave', () => colorChange(downloadButton, false));
+
+            // Function to toggle the answer display
+            function toggleAnswer(event) {
+                const questionId = event.currentTarget.id;
+                const answerId = event.currentTarget.dataset.answerId;
+                const answerElement = document.getElementById(answerId);
+                const iconElement = event.currentTarget.querySelector('.toggle-icon');
+
+                if (answerElement.classList.contains('show')) {
+                    answerElement.style.maxHeight = '0';
+                    answerElement.style.opacity = '0';
+                    answerElement.classList.remove('show');
+                    iconElement.classList.remove('rotate');
+                } else {
+                    const answerHeight = answerElement.scrollHeight;
+                    answerElement.style.maxHeight = `${answerHeight}px`;
                     answerElement.style.opacity = '1';
                     answerElement.classList.add('show');
+                    iconElement.classList.add('rotate');
                 }
-            })
-            .catch(error => {
-                loader.style.display = 'none';
-                alert(`Error occurred: ${error}`);
+            }
+
+            // Existing event listeners for questions
+            const questions = document.querySelectorAll('.question');
+            questions.forEach(question => {
+                question.addEventListener('click', toggleAnswer);
+            });
+
+            // Existing event listeners for answer generation buttons
+            const generateAnswerButtons = document.querySelectorAll('.generate-answer-button');
+            generateAnswerButtons.forEach(button => {
+                button.addEventListener('click', function() {
+                    const questionId = this.dataset.questionId; // Get the question ID
+                    const answerId = this.dataset.answerId;
+                    const answerElement = document.getElementById(answerId);
+                    
+                    console.log('Answer Element:', answerElement); // Debugging log
+
+                    if (!answerElement) {
+                        console.error(`Answer element with ID ${answerId} not found!`);
+                        return; // Exit if the answer element is not found
+                    }
+
+                    const loader = answerElement.querySelector('.loader');
+                    const noAnswerMessage = answerElement.querySelector('.no-answer'); // Select the existing no-answer message
+
+                    console.log('Loader:', loader); // Debugging log
+
+                    // Show loader
+                    if (loader) {
+                        loader.style.display = 'block'; // Show the loader
+                    }
+
+                    fetch("{% url 'generate_answer' %}", {
+    method: 'POST',
+    headers: {
+        'Content-Type': 'application/json',
+        'X-CSRFToken': '{{ csrf_token }}'
+    },
+    body: JSON.stringify({ document_id: '{{ document.id }}', question_id: questionId }) // Send the question ID
+})
+.then(response => {
+    if (!response.ok) {
+        return response.text().then(text => { throw new Error(text); });
+    }
+    return response.text(); // Expect HTML response
+})
+.then(html => {
+    let answerElement = document.getElementById(`answer-${questionId}`);
+    answerElement.innerHTML = html; // Set the inner HTML to the response
+    answerElement.style.maxHeight = `${answerElement.scrollHeight}px`;
+    answerElement.style.opacity = '1';
+    answerElement.classList.add('show');
+})
+.catch(error => {
+    console.error("Error occurred:", error);
+    alert(`Error occurred: ${error.message}`);
+});
+                });
             });
         });
-    });
-});
+
+
+        // Function to decode HTML entities
+        function decodeHtmlEntities(str) {
+            const textarea = document.createElement('textarea');
+            textarea.innerHTML = str; // Set the encoded string to the textarea
+            return textarea.value; // Return the decoded value
+        }
+
+
     </script>
 </body>
 </html>
