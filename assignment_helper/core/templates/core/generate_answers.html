@@ -37,6 +37,69 @@
             to { opacity: 1; }
         }
 
+        .custom-confirm-dialog {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: white;
+            padding: 20px 30px;
+            border-radius: 8px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+            z-index: 1000;
+            text-align: center;
+            min-width: 300px;
+            font-family: 'OpenSans', sans-serif;
+        }
+        .custom-confirm-dialog h3 {
+            color: #d32f2f;
+            margin-bottom: 15px;
+            font-size: 1.2em;
+        }
+        .custom-confirm-dialog p {
+            color: #555;
+            margin-bottom: 20px;
+            line-height: 1.5;
+        }
+
+        .custom-confirm-buttons {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+        }
+        .custom-confirm-button {
+            padding: 8px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: bold;
+        }
+        .confirm-yes {
+            background-color: #d32f2f;
+            color: white;
+        }
+        .confirm-no {
+            background-color: #757575;
+            color: white;
+        }
+        .confirm-yes:hover {
+            background-color: #b71c1c;
+        }
+
+        .confirm-no:hover {
+            background-color: #616161;
+        }
+        .overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 999;
+        }
+
         .nav {
             display: flex;
             justify-content: space-around; /* Space out navigation items */
@@ -133,7 +196,7 @@
         .question-answers-container {
             display: flex;
             flex-direction: column;
-            gap: 20px; /* Space between question-answer pairs */
+            gap: 30px; /* Space between question-answer pairs */
             width: 95%;
             margin-left: 2.5%;
         }
@@ -220,38 +283,112 @@
         .rotate {
             transform: rotate(90deg);
         }
-        .loader {
-            border: 4px solid rgba(255, 255, 255 , 0.3);
-            border-top: 4px solid var(--primary-color);
-            border-radius: 50%;
-            width: 24px;
-            height: 24px;
-            animation: spin 1s linear infinite;
-            display: none; /* Initially hidden */
-        }
-        .generate-answer-button {
-            background-color: var(--background-color);
-            padding: 10px 20px;
-            position: relative;
-            border-radius: 5px;
-            border-color: white;
-            border-width: 3px;
-            letter-spacing: 0.1em;
-            color: white;
-            margin: 10px;
-            transition: background-color 0.2s ease-in-out, transform 0.2s ease-in-out;
-        }
+        
+        /* Updated CSS for the layout */
+.button-wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 15px;
+    width: fit-content;
+    margin: 10px auto;
+}
+
+.marks-dropdown,
+.detailing-dropdown {
+    padding: 6px;
+    border-radius: 4px;
+    border: 2px solid var(--primary-color);
+    background: rgba(255, 255, 255, 0.9);
+    cursor: pointer;
+    width: 100px;
+    color: #333;
+    font-size: 14px;
+    opacity: 0;
+    transform: translateX(0);
+    transition: all 0.3s ease;
+    position: absolute;
+}
+
+.marks-dropdown {
+    right: 100%;
+    transform: translateX(50%);
+}
+
+.detailing-dropdown {
+    left: 100%;
+    transform: translateX(-50%);
+}
+
+.button-wrapper:hover .marks-dropdown {
+    opacity: 1;
+    transform: translateX(0);
+    right: calc(100% + 30px);
+}
+
+.button-wrapper:hover .detailing-dropdown {
+    opacity: 1;
+    transform: translateX(0);
+    left: calc(100% + 30px);
+}
+
+.generate-answer-button {
+    background-color: var(--background-color);
+    padding: 10px 20px;
+    position: relative;
+    border-radius: 5px;
+    border-color: white;
+    border-width: 3px;
+    letter-spacing: 0.1em;
+    color: white;
+    transition: all 0.2s ease-in-out;
+    z-index: 2;
+}
+
+.generate-answer-button:hover {
+    box-shadow: 0 0 35px rgb(157, 110, 245);
+    color: rgb(157, 110, 245);
+    border-color: rgb(157, 110, 245);
+    transform: scale(1.1);
+    cursor: pointer;
+}
+
+/* Style the dropdowns when button is hovered */
+.button-wrapper:hover .marks-dropdown,
+.button-wrapper:hover .detailing-dropdown {
+    border-color: rgb(157, 110, 245);
+    box-shadow: 0 0 15px rgba(157, 110, 245, 0.3);
+}
+
+/* Ensure dropdowns are visible when interacting with them */
+.marks-dropdown:focus,
+.detailing-dropdown:focus {
+    opacity: 1;
+    outline: none;
+    border-color: rgb(157, 110, 245);
+    box-shadow: 0 0 15px rgba(157, 110, 245, 0.5);
+}
+
+.loader {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    border: 4px solid rgba(255, 255, 255, 0.3);
+    border-top: 4px solid var(--primary-color);
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    animation: spin 1s linear infinite;
+    display: none;
+}
+
+
         .generate-answer-button a {
             color: whitesmoke;
         }
         
-        .generate-answer-button:hover {
-            box-shadow: 0 0 35px rgb(157, 110, 245);
-            color: rgb(157, 110, 245);
-            border-color: rgb(157, 110, 245);
-            transform: scale(1.1);
-            cursor: pointer;
-        }
         .generate-answer-button::before {
             content: "";
             position: absolute;
@@ -303,15 +440,13 @@
             left:  60%;
         }
         .button-container {
+            margin-top: 20px;
             display: flex;
             flex-direction: column;
             align-items: center;
             margin-right: 30%;
             justify-content: space-between;
-        }
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
+            gap: 25px;
         }
 
         @media (max-width: 600px) {
@@ -355,9 +490,27 @@
                             <p class="no-answer">No answer available.</p>
                         {% endif %}
                         <div class="loader" id="loader-{{ question_id }}"></div>
-                        <button class="generate-answer-button" data-question-id="{{ question_id }}" data-answer-id="answer-{{ question_id }}">
-                            <span>Re-generate Answer</span><i class="i1"></i><i class="i2"></i>
-                        </button>
+
+                        <!-- Modified button structure -->
+                        <div class="button-wrapper">
+                            <select class="marks-dropdown">
+                                <option value="5 marks">Marks</option>
+                                <option value="5 marks">5 marks</option>
+                                <option value="7 marks">7 marks</option>
+                                <option value="8 marks">8 marks</option>
+                            </select>
+                            <button class="generate-answer-button" data-question-id="{{ question_id }}" data-answer-id="answer-{{ question_id }}">
+                                <span>Re-generate Answer</span>
+                                <i class="i1"></i><i class="i2"></i>
+                            </button>
+                            <select class="detailing-dropdown">
+                                <option value="short">Detail</option>
+                                <option value="short">Short</option>
+                                <option value="medium">Medium</option>
+                                <option value="long">Long</option>
+                            </select>
+                        </div>
+
                     </div>
                 </div>
                 {% endfor %}
@@ -378,131 +531,220 @@
             </div>
         </div>
     </div>
+        <script>
+            document.addEventListener("DOMContentLoaded", function() {
+    const documentId = "{{ document.id }}";
+    const deleteButton = document.getElementById('deleted_button');
+    const downloadButton = document.getElementById('download_button');
 
-    <script>
-        document.addEventListener("DOMContentLoaded", function() {
-            const documentId = "{{ document.id }}";
-            console.log(documentId);
-            const deleteButton = document.getElementById('deleted_button');
-            const downloadButton = document.getElementById('download_button');
-
-            // Function to change colors on hover
-            function colorChange(button, isHover) {
-                const link = button.querySelector('a'); // Select the <a> inside the button
-
-                if (isHover) {
-                    if (button === deleteButton) {
-                        link.style.color = 'red'; // Change <a> color to red
-                        button.style.borderColor = 'red'; // Change border color
-                        button.style.boxShadow = '0 0 35px red'; // Change box shadow
-                    } else if (button === downloadButton) {
-                        link.style.color = 'blue'; // Change <a> color to blue
-                        button.style.borderColor = 'blue'; // Change border color
-                        button.style.boxShadow = '0 0 35px blue'; // Change box shadow
-                    }       
-                } else {
-                    link.style.color = 'white'; // Reset <a> color
-                    button.style.borderColor = 'white'; // Reset border color
-                    button.style.boxShadow = 'none'; // Reset box shadow
-                }
-            }
-
-            // Add mouse events to buttons
- deleteButton.addEventListener('mouseenter', () => colorChange(deleteButton, true));
-            deleteButton.addEventListener('mouseleave', () => colorChange(deleteButton, false));
-            downloadButton.addEventListener('mouseenter', () => colorChange(downloadButton, true));
-            downloadButton.addEventListener('mouseleave', () => colorChange(downloadButton, false));
-
-            // Function to toggle the answer display
-            function toggleAnswer(event) {
-                const questionId = event.currentTarget.id;
-                const answerId = event.currentTarget.dataset.answerId;
-                const answerElement = document.getElementById(answerId);
-                const iconElement = event.currentTarget.querySelector('.toggle-icon');
-
-                if (answerElement.classList.contains('show')) {
-                    answerElement.style.maxHeight = '0';
-                    answerElement.style.opacity = '0';
-                    answerElement.classList.remove('show');
-                    iconElement.classList.remove('rotate');
-                } else {
-                    const answerHeight = answerElement.scrollHeight;
-                    answerElement.style.maxHeight = `${answerHeight}px`;
-                    answerElement.style.opacity = '1';
-                    answerElement.classList.add('show');
-                    iconElement.classList.add('rotate');
-                }
-            }
-
-            // Existing event listeners for questions
-            const questions = document.querySelectorAll('.question');
-            questions.forEach(question => {
-                question.addEventListener('click', toggleAnswer);
-            });
-
-            // Existing event listeners for answer generation buttons
-            const generateAnswerButtons = document.querySelectorAll('.generate-answer-button');
-            generateAnswerButtons.forEach(button => {
-                button.addEventListener('click', function() {
-                    const questionId = this.dataset.questionId; // Get the question ID
-                    const answerId = this.dataset.answerId;
-                    const answerElement = document.getElementById(answerId);
-                    
-                    console.log('Answer Element:', answerElement); // Debugging log
-
-                    if (!answerElement) {
-                        console.error(`Answer element with ID ${answerId} not found!`);
-                        return; // Exit if the answer element is not found
-                    }
-
-                    const loader = answerElement.querySelector('.loader');
-                    const noAnswerMessage = answerElement.querySelector('.no-answer'); // Select the existing no-answer message
-
-                    console.log('Loader:', loader); // Debugging log
-
-                    // Show loader
-                    if (loader) {
-                        loader.style.display = 'block'; // Show the loader
-                    }
-
-                    fetch("{% url 'generate_answer' %}", {
-    method: 'POST',
-    headers: {
-        'Content-Type': 'application/json',
-        'X-CSRFToken': '{{ csrf_token }}'
-    },
-    body: JSON.stringify({ document_id: '{{ document.id }}', question_id: questionId }) // Send the question ID
-})
-.then(response => {
-    if (!response.ok) {
-        return response.text().then(text => { throw new Error(text); });
+    // Color change function for delete/download buttons
+    function colorChange(button, isHover) {
+        const link = button.querySelector('a');
+        if (isHover) {
+            if (button === deleteButton) {
+                link.style.color = 'red';
+                button.style.borderColor = 'red';
+                button.style.boxShadow = '0 0 35px red';
+            } else if (button === downloadButton) {
+                link.style.color = 'blue';
+                button.style.borderColor = 'blue';
+                button.style.boxShadow = '0 0 35px blue';
+            }       
+        } else {
+            link.style.color = 'white';
+            button.style.borderColor = 'white';
+            button.style.boxShadow = 'none';
+        }
     }
-    return response.text(); // Expect HTML response
-})
-.then(html => {
-    let answerElement = document.getElementById(`answer-${questionId}`);
-    answerElement.innerHTML = html; // Set the inner HTML to the response
-    answerElement.style.maxHeight = `${answerElement.scrollHeight}px`;
-    answerElement.style.opacity = '1';
-    answerElement.classList.add('show');
-})
-.catch(error => {
-    console.error("Error occurred:", error);
-    alert(`Error occurred: ${error.message}`);
-});
+
+    // Custom confirmation dialog function
+    function showCustomConfirm(message, callback) {
+                const overlay = document.createElement('div');
+                overlay.className = 'overlay';
+
+                const dialogBox = document.createElement('div');
+                dialogBox.className = 'custom-confirm-dialog';
+                
+                dialogBox.innerHTML = `
+                    <h3>Confirm Deletion</h3>
+                    <p>${message}</p>
+                    <div class="custom-confirm-buttons">
+                        <button class="custom-confirm-button confirm-yes">Delete</button>
+                        <button class="custom-confirm-button confirm-no">Cancel</button>
+                    </div>
+                `;
+
+                overlay.appendChild(dialogBox);
+                document.body.appendChild(overlay);
+
+                // Handle button clicks
+                const yesButton = dialogBox.querySelector('.confirm-yes');
+                const noButton = dialogBox.querySelector('.confirm-no');
+
+                yesButton.addEventListener('click', () => {
+                    document.body.removeChild(overlay);
+                    callback(true);
+                });
+
+                noButton.addEventListener('click', () => {
+                    document.body.removeChild(overlay);
+                    callback(false);
+                });
+            }
+
+            // Add confirmation for delete button
+            deleteButton.addEventListener('click', function(e) {
+                e.preventDefault();
+                const deleteUrl = this.querySelector('a').href;
+                
+                showCustomConfirm('Are you sure you want to delete this PDF? This action cannot be undone.', (confirmed) => {
+                    if (confirmed) {
+                        window.location.href = deleteUrl;
+                    }
                 });
             });
-        });
+
+    // Color change function for delete/download buttons
+    function colorChange(button, isHover) {
+        const link = button.querySelector('a');
+        if (isHover) {
+            if (button === deleteButton) {
+                link.style.color = 'red';
+                button.style.borderColor = 'red';
+                button.style.boxShadow = '0 0 35px red';
+            } else if (button === downloadButton) {
+                link.style.color = 'blue';
+                button.style.borderColor = 'blue';
+                button.style.boxShadow = '0 0 35px blue';
+            }       
+        } else {
+            link.style.color = 'white';
+            button.style.borderColor = 'white';
+            button.style.boxShadow = 'none';
+        }
+    }
 
 
-        // Function to decode HTML entities
-        function decodeHtmlEntities(str) {
-            const textarea = document.createElement('textarea');
-            textarea.innerHTML = str; // Set the encoded string to the textarea
-            return textarea.value; // Return the decoded value
+
+    // Add mouse events to delete/download buttons
+    deleteButton.addEventListener('mouseenter', () => colorChange(deleteButton, true));
+    deleteButton.addEventListener('mouseleave', () => colorChange(deleteButton, false));
+    downloadButton.addEventListener('mouseenter', () => colorChange(downloadButton, true));
+    downloadButton.addEventListener('mouseleave', () => colorChange(downloadButton, false));
+
+    // Toggle answer function
+    function toggleAnswer(event) {
+        const questionId = event.currentTarget.id;
+        const answerId = event.currentTarget.dataset.answerId;
+        const answerElement = document.getElementById(answerId);
+        const iconElement = event.currentTarget.querySelector('.toggle-icon');
+
+        if (answerElement.classList.contains('show')) {
+            answerElement.style.maxHeight = '0';
+            answerElement.style.opacity = '0';
+            answerElement.classList.remove('show');
+            iconElement.classList.remove('rotate');
+        } else {
+            const answerHeight = answerElement.scrollHeight;
+            answerElement.style.maxHeight = `${answerHeight}px`;
+            answerElement.style.opacity = '1';
+            answerElement.classList.add('show');
+            iconElement.classList.add('rotate');
+        }
+    }
+
+    // Add click events to questions
+    const questions = document.querySelectorAll('.question');
+    questions.forEach(question => {
+        question.addEventListener('click', toggleAnswer);
+    });
+
+    // Handle regenerate answer functionality
+    const buttonWrappers = document.querySelectorAll('.button-wrapper');
+
+    // Function to set answer height based on content
+    function setAnswerHeight(answerElement, isLoading) {
+        // Force a reflow to get accurate scrollHeight
+        void answerElement.offsetHeight;
+        
+        if (isLoading) {
+            // When loader is shown, set minimum height to accommodate loader
+            answerElement.style.minHeight = '150px'; // Adjust this value as needed
+            answerElement.style.maxHeight = 'none';
+        } else {
+            // Calculate height based on content
+            const contentHeight = answerElement.scrollHeight;
+            answerElement.style.minHeight = 'auto';
+            answerElement.style.maxHeight = `${contentHeight}px`;
         }
 
+        // Ensure visibility and opacity
+        answerElement.style.opacity = '1';
+        answerElement.classList.add('show');
+    }
 
-    </script>
-</body>
+    buttonWrappers.forEach(wrapper => {
+        const button = wrapper.querySelector('.generate-answer-button');
+        const marksDropdown = wrapper.querySelector('.marks-dropdown');
+        const detailingDropdown = wrapper.querySelector('.detailing-dropdown');
+
+        button.addEventListener('click', function(e) {
+            e.preventDefault(); // Prevent default button behavior
+            
+            const questionId = this.dataset.questionId;
+            const answerId = this.dataset.answerId;
+            const answerElement = document.getElementById(answerId);
+
+            if (!marksDropdown.value || !detailingDropdown.value) {
+                alert('Please select both marks and detailing level');
+                return;
+            }
+
+            // Show loader and set loading height
+            const loader = answerElement.querySelector('.loader');
+            if (loader) {
+                loader.style.display = 'block';
+                setAnswerHeight(answerElement, true);
+            }
+
+            // Make the fetch request
+            fetch("{% url 'generate_answer' %}", {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': '{{ csrf_token }}'
+                },
+                body: JSON.stringify({ 
+                    document_id: documentId,
+                    question_id: questionId,
+                    marks: marksDropdown.value,
+                    detailing: detailingDropdown.value
+                })
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(response.statusText);
+                }
+                return response.text();
+            })
+            .then(html => {
+                answerElement.innerHTML = html;
+                // Set height based on new content
+                setAnswerHeight(answerElement, false);
+            })
+            .catch(error => {
+                console.error("Error occurred:", error);
+                alert(`Error occurred: ${error.message}`);
+            })
+            .finally(() => {
+                if (loaderContainer) {
+                    loader.style.display = 'none';
+                }
+            });
+        });
+    });
+});
+
+        </script>
+    </body>
 </html>
