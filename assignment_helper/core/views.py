@@ -633,10 +633,11 @@ def generate_answers(request):
         print(f"Questions to process: {questions_list}")
 
         # Directly fetch new answers from the Gemini API using the actual questions
-        answers = get_answers_from_gemini(questions_list, 'long') 
+        answers = get_answers_from_gemini(questions_list, 'medium')
+        print("RAW API RESPONSE\n\n", answers) 
          # Pass the actual questions
         answers = clean_and_format_data(answers)
-        print("SPI RESPONSE:\n\n", answers)
+        print("CLEANED API RESPONSE:\n\n", answers)
 
         question_id_answer_map = {}
         ans_map = {idx + 1: answer for idx, answer in enumerate(answers)}
@@ -713,6 +714,11 @@ def generate_answers(request):
 
     return FileResponse(open(pdf_output, 'rb'), content_type='application/pdf')'''
 
+from django.conf import settings
+from django.db import models
+from weasyprint import HTML, CSS
+import os
+
 def generate_question_bank_pdf(questions, answers, document_id, metadata=None):
     print("Generating enhanced question bank PDF...")
     media_dir = settings.MEDIA_ROOT
@@ -721,75 +727,174 @@ def generate_question_bank_pdf(questions, answers, document_id, metadata=None):
     # Ensure directory exists
     os.makedirs(answers_dir, exist_ok=True)
 
-    pdf = QuestionBankPDF()
-    
-    # Add cover page
-    pdf.add_page()
-    pdf.set_font("OpenSans", 'B', 28)
-    pdf.set_text_color(*pdf.primary_color)
-    
-    # Add decorative elements to cover
-    pdf.set_fill_color(*pdf.highlight_color)
-    pdf.rect(0, 100, 210, 50, 'F')
-    
-    pdf.cell(0, 120, 'University Question Bank', 0, 1, 'C')
-    
-    # Subtitle
-    pdf.set_font("OpenSans", 'I', 16)
-    pdf.set_text_color(*pdf.secondary_color)
-    pdf.cell(0, 10, 'A comprehensive compilation of important questions', 0, 1, 'C')
-    
-    # Add metadata if provided
-    if metadata:
-        pdf.ln(20)
-        pdf.set_font("OpenSans", '', 12)
-        for key, value in metadata.items():
-            pdf.cell(0, 8, f'{key}: {value}', 0, 1, 'C')
-    
-    # Add Table of Contents
-    pdf.add_page()
-    pdf.add_section_header("Table of Contents", include_line=False)
-    
-    for i, question in enumerate(questions, start=1):
-        pdf.set_font("OpenSans", '', 11)
-        truncated_question = (question[:60] + '...') if len(question) > 60 else question
-        
-        # Add dot leaders
-        dots = '.' * (80 - len(truncated_question))
-        pdf.cell(0, 8, f"{i}. {truncated_question} {dots} {pdf.page_no() + 1}", 0, 1, 'L')
-    
-    # Add main content
-    pdf.add_page()
-    pdf.add_section_header("Questions and Answers")
-    
-    # Progress tracking
-    total = len(questions)
-    for i, (question, answer) in enumerate(zip(questions, answers), start=1):
-        print(f"Processing question {i}/{total}")
-        pdf.add_question(i, question, answer)
-        
-        # Add page break after every 3 questions or if near page end
-        if i % 3 == 0 and i < total:
-            pdf.add_page()
+    # Create HTML content for the PDF
+    html_content = f"""
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>University Question Bank</title>
+        <style>
+            body {{
+                font-family: 'Open Sans', sans-serif;
+                margin: 0;
+                padding: 0;
+                background-color: #f4f7f8;
+                color: #333;
+    line-height: 1.6;
+            }}
 
-   
-    filename = f"answers_{document_id}.pdf"
-    pdf_output = os.path.join(answers_dir, filename)
+.header {{
+    background-color: #007bff;
+    color: white;
+    padding: 20px;
+    text-align: center;
+}}
+
+.header h1 {{
+    font-size: 2.5em;
+    margin: 0;
+}}
+
+.container {{
+    width: 80%;
+    margin: 0 auto;
+    padding: 20px;
+    background: white;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    border-radius: 8px;
+}}
+
+h2 {{
+    color: #007bff;
+    border-bottom: 2px solid #007bff;
+    padding-bottom: 10px;
+}}
+
+.table-of-contents {{
+    margin: 20px 0;
+}}
+
+.table-of-contents ul {{
+    list-style-type: none;
+    padding: 0;
+}}
+
+.table-of-contents li {{
+    margin: 5px 0;
+}}
+
+.table-of-contents li a {{
+    text-decoration: none;
+    color: #007bff;
+}}
+
+.table-of-contents li a:hover {{
+    text-decoration: underline;
+}}
+
+.question-answer-section {{
+    margin: 30px 0;
+}}
+
+.question {{
+    background-color: #e9ecef;
+    border-left: 5px solid #007bff;
+    padding: 15px;
+    margin: 15px 0;
+    border-radius: 5px;
+}}
+
+.answer {{
+    background-color: #f8f9fa;
+    padding: 15px;
+    margin: 10px 0 20px;
+    border-radius: 5px;
+    border: 1px solid #dee2e6;
+}}
+
+.footer {{
+    margin-top: 20px;
+    text-align: center;
+    padding: 20px;
+    font-size: 0.9em;
+    background-color: #007bff;
+    color: white;
+    position: relative;
+}}
+
+.footer p {{
+    margin: 0;
+}}
+
+@media (max-width: 768px) {{
+    .container {{
+        width: 90%;
+    }}
+
+    .header h1 {{
+        font-size: 2em;
+    }}
+}}
+
+        </style>
+    </head>
+    <body>
+        <div class="cover">
+            <h1>University Question Bank</h1>
+            <h2>A comprehensive compilation of important questions</h2>
+            {generate_metadata_section(metadata)}
+        </div>
+        <div class="toc">
+            <h3 class="toc-header">Table of Contents</h3>
+            {generate_toc(questions)}
+        </div>
+        <div class="content">
+            <h3>Questions and Answers</h3>
+            {generate_questions_answers(questions, answers)}
+        </div>
+        <div class="footer">
+            <p>Generated by Your Application</p>
+        </div>
+    </body>
+    </html>
+    """
+
+    # Create PDF
+    pdf_filename = f"answers_{document_id}.pdf"
+    pdf_output = os.path.join(answers_dir, pdf_filename)
     
-    # Save PDF
-    pdf.output(pdf_output)
-    print(f"PDF generated successfully: {filename}")
+    HTML(string=html_content).write_pdf(pdf_output, stylesheets=[CSS(string='body { font-family: "Open Sans"; }')])
+    print(f"PDF generated successfully: {pdf_filename}")
         
     # Update document record
     document = Document.objects.get(id=document_id)
-    document.answers = f"answers/{filename}"
+    document.answers = f"answers/{pdf_filename}"
     document.save()
-        
-    return FileResponse(
-        open(pdf_output, 'rb'),
-        content_type='application/pdf',
-        filename=filename
-    )
+    
+def generate_metadata_section(metadata):
+    if metadata:
+        section = "<div>"
+        for key, value in metadata.items():
+            section += f"<p>{key}: {value}</p>"
+        section += "</div>"
+        return section
+    return ""
+
+def generate_toc(questions):
+    toc = "<ul>"
+    for i, question in enumerate(questions, start=1):
+        truncated_question = (question[:60] + '...') if len(question) > 60 else question
+        toc += f"<li>{i}. {truncated_question}</li>"
+    toc += "</ul>"
+    return toc
+
+def generate_questions_answers(questions, answers):
+    content = ""
+    for i, (question, answer) in enumerate(zip(questions, answers), start=1):
+        content += f"<div class='question-answer'><div class='question'>{i}. {question}</div><div class='answer'>{answer}</div></div>"
+    return content
 
 
 
@@ -849,10 +954,12 @@ def get_answers_from_gemini(questions, ans_detailing):
         return ['An error occurred. Please try again.']
 
 '''CLEANING PIPELINE'''
+import re
 from bs4 import BeautifulSoup
 
 def clean_single_answer_response(response_text):
-    """Clean and format the response treating the entire content as a single answer."""
+    """Extract and clean relevant HTML formatted text from the response."""
+    # Define patterns to remove common noise phrases from model responses
     response_patterns = [
         r'Here is the answer to the question.*',  # General introductory phrases
         r'I hope this helps!',  # Closing phrases
@@ -861,31 +968,49 @@ def clean_single_answer_response(response_text):
         r'Here are some insights.*',  # Introductory insight phrases
         r'The following are key points.*',  # Key points starters
         r'Additionally,.*',  # Additional info starters
-        r'Please note that.*',
-        r'Here is the answer in HTML format:*',
-        r'Note*',
-        r'Here are the*',
-        r'Let me*',
-        r'know if you need any changes or further assistance!*',# Notes or disclaimers
+        r'Please note that.*',  # Disclaimers
+        r'Here is the answer in HTML format:*',  # Format indicators
+        r'Note*',  # General notes
+        r'Here are the*',  # List starters
+        r'Let me know if you need any further assistance*',  # Offers for further help
+        r'know if you need any changes or further assistance!*',  # Further assistance offers
         r': The HTML code generated is a simple comparison container that includes headings, lists, and spans to format the text. You can customize the design and style to fit your web template.*',
-        r'Answer in HTML format:',
-        r'know if you have any further requests.',
-        # Add additional patterns as needed for other chatbot response phrases
+        r'Answer in HTML format:',  # Format indicators
+        r'know if you have any further requests.',  # Further requests
+        # Add additional patterns as needed for other model-specific phrases
     ]
     
+    # Compile the patterns into a single regex pattern
     combined_pattern = re.compile('|'.join(response_patterns), re.IGNORECASE)
+    
+    # Remove unwanted phrases
     cleaned_response = combined_pattern.sub('', response_text)
+    
+    # Parse the cleaned response with BeautifulSoup
     soup = BeautifulSoup(cleaned_response, "html.parser")
     
     # Remove specific unwanted tags while preserving their content
     for tag in soup.find_all(['code', 'q']):
         tag.unwrap()  # Remove <code> and <q> tags but keep the content
     
+    # Additional cleaning: remove empty tags and unnecessary whitespace
+    for tag in soup.find_all():
+        if not tag.get_text(strip=True):
+            tag.decompose()  # Remove empty tags
+        else:
+            tag.attrs = {}  # Remove all attributes from tags to clean up the HTML
+
     # Convert the cleaned HTML back to a string
-    cleaned_answer = str(soup)
+    cleaned_html = str(soup)
     
-    # Return the cleaned answer wrapped in a list
-    return [cleaned_answer]
+    # Return the cleaned HTML wrapped in a list
+    return [cleaned_html]
+
+# Note: Ensure that you have BeautifulSoup installed:
+# pip install beautifulsoup4
+
+import re
+from bs4 import BeautifulSoup
 
 def normalize_text(raw_text):
     """Minimal normalization for HTML-formatted content."""
@@ -910,26 +1035,108 @@ def extract_questions_and_answers(normalized_text):
     
     return qa_pairs
 
+def clean_single_answer_response_in_pipeline(response_text):
+    """Extract and clean relevant HTML formatted text from the response."""
+    # Define patterns to remove common noise phrases from model responses
+    response_patterns = [
+        r'Here is the answer to the question.*',  # General introductory phrases
+        r'I hope this helps!',  # Closing phrases
+        r'Let me know if you have any further questions or need any modifications.',  # Closing suggestion
+        r'In summary,.*',  # Summary or conclusion starters
+        r'Here are some insights.*',  # Introductory insight phrases
+        r'The following are key points.*',  # Key points starters
+        r'Additionally,.*',  # Additional info starters
+        r'Please note that.*',  # Disclaimers
+        r'Here is the answer in HTML format:*',  # Format indicators
+        r'Note*',  # General notes
+        r'Here are the*',  # List starters
+        r'Let me*',  # Offers for further help
+        r'know if you need any changes or further assistance!*',  # Further assistance offers
+        r': The HTML code generated is a simple comparison container that includes headings, lists, and spans to format the text. You can customize the design and style to fit your web template.*',
+        r'Answer in HTML format:',  # Format indicators
+        r'know if you have any further requests.',  # Further requests
+        # Add additional patterns as needed for other model-specific phrases
+    ]
+    
+    # Compile the patterns into a single regex pattern
+    combined_pattern = re.compile('|'.join(response_patterns), re.IGNORECASE)
+    
+    # Remove unwanted phrases
+    cleaned_response = combined_pattern.sub('', response_text)
+    
+    # Parse the cleaned response with Beaut
+    soup = BeautifulSoup(cleaned_response, "html.parser")
+    
+    # Remove specific unwanted tags while preserving their content
+    for tag in soup.find_all(['code', 'q']):
+        tag.unwrap()  # Remove <code> and <q> tags but keep the content
+    
+    # Additional cleaning: remove empty tags and unnecessary whitespace
+    for tag in soup.find_all():
+        if not tag.get_text(strip=True):
+            tag.decompose()  # Remove empty tags
+        else:
+            tag.attrs = {}  # Remove all attributes from tags to clean up the HTML
+
+    # Convert the cleaned HTML back to a string
+    cleaned_html = str(soup)
+    
+    # Return the cleaned HTML wrapped in a list
+    return [cleaned_html]
+
+import re
+from bs4 import BeautifulSoup
+
 def clean_and_format_data(raw_response):
-    """Directly use HTML content to structure data with HTML formatting."""
-    normalized_text = normalize_text(raw_response)
-    qa_pairs = extract_questions_and_answers(normalized_text)
-    
-    structured_data = []
-    for question, answer in qa_pairs:
-        structured_data.append({'title': question, 'content': answer})
-    
-    return convert_to_html(structured_data)
+    # Remove any leading or trailing whitespace
+    raw_response = raw_response.strip()
+
+    # Remove any unnecessary text before the actual HTML content
+    html_start_index = raw_response.find('<')
+    if html_start_index != -1:
+        raw_response = raw_response[html_start_index:]
+
+    # Parse the HTML response
+    soup = BeautifulSoup(raw_response, 'html.parser')
+
+    # Find all the answer sections
+    answer_sections = soup.find_all(['h1', 'h2', 'h3', 'p', 'ul', 'ol', 'div'])
+
+    cleaned_answers = []
+    current_answer = ''
+
+    for section in answer_sections:
+        if section.name.startswith('h') or section.name == 'div':
+            if current_answer.strip():
+                cleaned_answers.append(current_answer.strip())
+            current_answer = ''
+        else:
+            current_answer += str(section)
+
+    if current_answer.strip():
+        cleaned_answers.append(current_answer.strip())
+
+    # Additional cleaning and formatting
+    cleaned_answers = [re.sub(r'\n+', '\n', answer) for answer in cleaned_answers]  # Remove excessive newline characters
+    cleaned_answers = [re.sub(r'\s+', ' ', answer) for answer in cleaned_answers]  # Remove excessive whitespace
+    cleaned_answers = [answer.replace('**', '').strip() for answer in cleaned_answers]  # Remove any remaining Markdown formatting
+    cleaned_answers = [re.sub(r'</?strongda>', '', answer) for answer in cleaned_answers]  # Remove invalid closing tags
+    cleaned_answers = [re.sub(r'</?strong_.*?>', '', answer) for answer in cleaned_answers]  # Remove invalid opening tags
+
+    return cleaned_answers
+
+
 
 def convert_to_html(cleaned_data):
     """Format structured data into the final HTML format."""
     html_data = []
     for entry in cleaned_data:
         title_html = f"<strong>{entry['title']}</strong>"
-        content_html = f"<p>{entry['content']}</p>"
+        content_html = entry['content']
         html_data.append(f"{title_html}\n{content_html}")
     
     return html_data
+
 
 
 '''QUESTION EXTRACTION PIPELINE'''
