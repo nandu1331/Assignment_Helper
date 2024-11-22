@@ -402,46 +402,11 @@ def generate_answers(request):
         'question_answer_map': {}
     })
 
-'''def generate_question_bank_pdf(questions, answers, document_id):
-    print("Generating question bank PDF.")
-    media_dir = settings.MEDIA_ROOT
-    answers_dir = os.path.join(media_dir, "answers")
+def edit_file_details(request, file_id):
+    
+    return render(request, 'core/edit_file_details.html')
 
-    if not os.path.exists(answers_dir):
-        os.makedirs(answers_dir)
-
-    pdf = QuestionBankPDF()
-    pdf.add_page()
-
-    pdf.set_font("OpenSans", 'B', 20)
-    pdf.set_text_color(0, 51, 102)
-    pdf.cell(0, 20, 'University Question Bank', 0, 1, 'C')
-    pdf.ln(10)
-
-    pdf.set_font("OpenSans", 'I', 14)
-    pdf.set_text_color(100, 100, 100)
-    pdf.cell(0, 10, 'A compilation of important questions for review', 0, 1, 'C')
-    pdf.ln(20)
-
-    pdf.set_fill_color(220, 220, 220)
-    pdf.set_font("OpenSans", '', 12)
-
-    for i, (question, answer) in enumerate(zip(questions, answers), start=1):
-        pdf.add_question(i, question, answer)
-
-    pdf_output = os.path.join(answers_dir, f"answers_{document_id}.pdf")
-    pdf.output(pdf_output)
-
-    document = Document.objects.get(id=document_id)
-    document.answers = f"answers/answers_{document_id}.pdf"
-    document.save()
-
-    return FileResponse(open(pdf_output, 'rb'), content_type='application/pdf')'''
-
-from django.conf import settings
-from django.db import models
 from weasyprint import HTML, CSS
-import os
 
 def generate_question_bank_pdf(questions, answers, document_id, metadata=None):
     print("Generating enhanced question bank PDF...")

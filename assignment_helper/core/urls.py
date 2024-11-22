@@ -10,6 +10,7 @@ urlpatterns = [
     path('log_out/', views.log_out, name='log_out'),
     path('upload/', views.upload_pdf, name='upload_pdf'),
     path('saved_files/', views.saved_files, name='saved_files'),
+    path('edit_file_details/', views.edit_file_details, name='edit_file_details'),
     path('update_questions/', views.update_questions, name='update_questions'),
     path('api/uploaded-files/', views.get_uploaded_files, name='get_uploaded_files'),
     path('delete_file/<int:file_id>/', views.delete_file, name='delete_file'),
