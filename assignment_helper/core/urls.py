@@ -4,6 +4,9 @@ from django.conf import settings
 from django.conf.urls.static import static
 
 urlpatterns = [
+    
+
+    path('create_quiz/',views.create_quiz,name='create_quiz'),
     path('', views.index, name='index'),
     path('login/', views.login_view, name='login'),
     path('signup/', views.sign_up, name='sign_up'),

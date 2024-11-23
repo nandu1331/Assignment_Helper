@@ -1,6 +1,6 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from .forms import PDFUploadForm
-import google.generativeai as genai
+
 import os
 from fpdf import FPDF
 import re
@@ -14,14 +14,16 @@ from django.conf import settings
 import pdfplumber
 import spacy
 from nltk.corpus import words
-import google
+import nltk
+nltk.download('words')
+
 import json
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth import authenticate, login
 from django.contrib import messages
 from .forms import CustomLoginForm
 # Configure the Gemini API
-genai.configure(api_key=os.environ['API_KEY'])
+
 
 # Load the English NLP model
 nlp = spacy.load("en_core_web_sm")
@@ -913,3 +915,25 @@ def extract_questions(pdf_path):
     for index, question in enumerate(all_questions, start=1):
         question_id_mapping.append((index, question))
     return question_id_mapping
+
+def create_quiz(request):
+    context =  [
+        
+        {
+            "question": "What is the tallest mountain in the world?",
+            "options": ["Mount Everest", "K2", "Mount Kilimanjaro", "Mount Denali"],
+            "answer": "Mount Everest"
+        },
+        {
+            "question": "Which planet is known as the Red Planet?",
+            "options": ["Earth", "Mars", "Jupiter", "Venus"],
+            "answer": "Mars"
+        },
+        {
+            "question": "What is the capital of France?",
+            "options": ["Berlin", "Madrid", "Paris", "Rome"],
+            "answer": "Paris"
+        },
+    ]
+    return render(request, 'core/create_quiz.html', {"quiz_data":context})
+

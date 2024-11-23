@@ -23,7 +23,7 @@
 </head>
 <body>
     <nav class="nav">
-        <a href="{% url 'index' %}">Home</a>
+        <a href="{% url 'create_quiz' %}">Create Quiz</a>
         <a href="{% url 'upload_pdf' %}">Upload Files</a>
         <a href="{% url 'saved_files' %}">Your Work</a>
         {% if user.is_authenticated %}

@@ -1,0 +1,20 @@
+Metadata-Version: 2.1
+Name: tensorflow-intel
+Version: 0.0.1
+Summary: A dummy package
+Home-page: https://www.tensorflow.org/
+Author: 
+Author-email: 
+Project-URL: Bug Tracker, https://github.com/tensorflow/tensorflow/issues
+Classifier: Programming Language :: Python :: 3
+Classifier: License :: OSI Approved :: Apache Software License
+Classifier: Operating System :: Microsoft :: Windows
+Requires-Python: >=3.7
+Description-Content-Type: text/markdown
+License-File: LICENSE
+License-File: AUTHORS
+Requires-Dist: pyinstaller
+Requires-Dist: twine
+Requires-Dist: build
+
+# Tensorflow-Intel

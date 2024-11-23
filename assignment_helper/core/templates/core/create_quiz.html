@@ -1,0 +1,85 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quiz System</title>
+    <link rel="stylesheet" href="{% static 'core/css/create_quiz.css' %}">
+</head>
+
+<body>
+<style>
+    body {
+        background-image: url("{% static 'core/images/bg.jpg' %}");
+        background-size: cover;
+        background-repeat: no-repeat;
+        height: 100vh;
+    }
+</style>
+
+    <div class="form-container">
+        <!-- Quiz Generation Section -->
+        <div class="quiz-generation-section">
+            <h1>Quiz System</h1>
+            <form id="topicForm" method="POST" action="{% url 'create_quiz' %}">
+                {% csrf_token %}
+                <div class="form-group">
+                    <label for="topic">Enter Topic:</label>
+                    <input type="text" id="topic" name="topic" placeholder="Enter any topic for the quiz" required>
+                </div>
+                <button type="submit">Generate Quiz</button>
+            </form>
+
+            <div id="loadingIndicator" class="loading">
+                Generating quiz for your topic...
+            </div>
+
+            <div id="messageContainer" {% if messages %}style="display: block;"{% endif %}>
+                {% if messages %}
+                    {% for message in messages %}
+                        <div class="message {% if message.tags %}{{ message.tags }}{% endif %}">
+                            {{ message }}
+                        </div>
+                    {% endfor %}
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Separator -->
+        {% if quiz_data %}
+        <div class="section-separator"></div>
+
+        <!-- Questions Section -->
+        <div id="quizContainer" class="quiz-container">
+            <h2>Quiz for: {{ topic }}</h2>
+            <form method="POST" action="{% url 'create_quiz' %}">
+                {% csrf_token %}
+                {% for question in quiz_data %}
+                <div class="question-container">
+                    <p><strong>Question {{ forloop.counter }}:</strong> {{ question.question }}</p>
+                    {% for option in question.options %}
+                    <div class="option">
+                        <input type="radio" name="q{{ forloop.parentloop.counter }}" value="{{ forloop.counter0 }}" 
+                               id="q{{ forloop.parentloop.counter }}o{{ forloop.counter }}" required>
+                        <label for="q{{ forloop.parentloop.counter }}o{{ forloop.counter }}">{{ option }}</label>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% endfor %}
+                {% if quiz_data %}
+                <button type="submit">Submit Quiz</button>
+                {% endif %}
+            </form>
+        </div>
+        {% endif %}
+    </div>
+
+    <script>
+        document.getElementById('topicForm').addEventListener('submit', function(e) {
+            const loadingIndicator = document.getElementById('loadingIndicator');
+            loadingIndicator.style.display = 'block';
+        });
+    </script>
+</body>
+</html>
