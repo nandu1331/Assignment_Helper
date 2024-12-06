@@ -17,6 +17,13 @@ urlpatterns = [
     path('generate_answers/', views.generate_answers, name='generate_answers'),
     path('view_answers/<int:file_id>/', views.view_answers, name='view_answers'),  # New URL pattern for viewing answers
     path('download/<int:file_id>/', views.download_file, name='download_file'),
+    # path('quiz/', views.quiz_home, name='quiz_home'),
+    path('generate-quiz/', views.generate_quiz, name='generate_quiz'),
+    path('submit-quiz/<int:quiz_id>/', views.submit_quiz, name='submit_quiz'),
+    path('quiz/', views.quiz_home, name='quiz_home'),
+    path('quiz/attempt/<int:quiz_id>/', views.attempt_quiz, name='attempt_quiz'),
+    path('quiz/results/<int:quiz_id>/', views.quiz_results, name='quiz_results'),
+    path('quiz/history/', views.quiz_history, name='quiz_history'),
 ]
 
 if settings.DEBUG:

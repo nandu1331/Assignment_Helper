@@ -1224,3 +1224,661 @@ def extract_questions(pdf_path):
     for index, question in enumerate(all_questions, start=1):
         question_id_mapping.append((index, question))
     return question_id_mapping
+
+
+from django.shortcuts import render, redirect, get_object_or_404
+from django.http import JsonResponse
+from django.contrib.auth.decorators import login_required
+from django.contrib import messages
+from django.core.cache import cache
+from django.core.paginator import Paginator
+from django.db import IntegrityError
+from .models import Quiz, QuizAttempt, Question
+from django.views.decorators.csrf import csrf_exempt
+import json
+
+# Quiz Home
+def quiz_home(request):
+    """Render the quiz generator template."""
+    recent_quizzes = Quiz.objects.order_by('-created_at')[:5]
+    return render(request, 'core/quiz_generator.html', {'recent_quizzes': recent_quizzes})
+
+
+from django.shortcuts import render, get_object_or_404, redirect
+from django.contrib import messages
+from .models import Quiz, QuizAttempt
+
+@login_required
+def attempt_quiz(request, quiz_id):
+    """Handle quiz attempts."""
+    # Get the quiz object, return 404 if not found
+    quiz = get_object_or_404(Quiz, id=quiz_id)
+
+    # Check if the quiz is active
+    if not quiz.is_active:
+        messages.error(request, "This quiz is no longer available.")
+        return redirect('quiz_home')
+
+    # Check if the user has already attempted the quiz
+    if QuizAttempt.objects.filter(quiz=quiz, user=request.user).exists():
+        return redirect('quiz_results', quiz_id=quiz_id)
+
+    # Get the questions for the quiz
+    questions = quiz.questions.all()
+
+    # Ensure there are questions for the quiz
+    if not questions:
+        messages.error(request, "This quiz has no questions. Please contact support.")
+        return redirect('quiz_home')
+
+    # Pass the quiz and questions to the template
+    context = {
+        'quiz': quiz,
+        'questions': questions,
+    }
+    
+    return render(request, 'core/quiz_attempt.html', context)
+
+
+@login_required
+def submit_quiz(request, quiz_id):
+    """Handle quiz submission and scoring, updating an existing attempt if one exists."""
+    if request.method != 'POST':
+        return JsonResponse({'error': 'Method not allowed'}, status=405)
+
+    try:
+        data = json.loads(request.body)
+        answers = data.get('answers', [])
+
+        if not quiz_id:
+            return JsonResponse({'error': 'Quiz ID is required'}, status=400)
+
+        # Retrieve the quiz and questions
+        quiz = get_object_or_404(Quiz, id=quiz_id)
+        questions = quiz.questions.all()
+
+        # Ensure there are questions in the quiz
+        if not questions:
+            return JsonResponse({'error': 'This quiz has no questions'}, status=400)
+
+        # Calculate score
+        correct_answers = 0
+        incorrect_answers = []
+        for answer in answers:
+            question_index = answer.get('questionIndex')  # Frontend sends `questionIndex`
+            selected_option = answer.get('selectedOption')
+
+            # Validate the presence of questionIndex and selectedOption
+            if question_index is None or selected_option is None:
+                continue
+
+            try:
+                question = questions[question_index]  # Use index to get the question directly
+                # Compare selected option with correct option
+                if question.correct_option == selected_option:
+                    correct_answers += 1
+                else:
+                    incorrect_answers.append({
+                        'question': question.text,
+                        'selectedOption': question.options[selected_option],
+                        'correctOption': question.options[question.correct_option],
+                        'explanation': question.explanation
+                    })
+            except IndexError:
+                continue  # If the index is out of range, skip this answer
+
+        total_questions = questions.count()
+        score = (correct_answers / total_questions) * 100 if total_questions > 0 else 0
+
+        # Check if the user has already attempted this quiz
+        existing_attempt = QuizAttempt.objects.filter(quiz=quiz, user=request.user).first()
+        if existing_attempt:
+            # Update the existing attempt
+            existing_attempt.score = score
+            existing_attempt.answers = answers  # Update the answers field
+            existing_attempt.save()
+            attempt = existing_attempt  # Use the updated attempt
+        else:
+            # Create a new attempt
+            attempt = QuizAttempt.objects.create(
+                quiz=quiz,
+                user=request.user,
+                score=score,
+                answers=answers,
+            )
+
+        # Return the response with quizId, score, and other details
+        return JsonResponse({
+            'quizId': quiz.id,
+            'score': score,
+            'correctAnswers': correct_answers,
+            'totalQuestions': total_questions,
+            'incorrectAnswers': incorrect_answers,
+            'explanations': [
+                {
+                    'question': question.text,
+                    'explanation': question.explanation
+                } for question in questions
+            ]
+        })
+
+    except json.JSONDecodeError:
+        return JsonResponse({'error': 'Invalid JSON'}, status=400)
+    except Exception as e:
+        print(f"Error in submit_quiz: {str(e)}")
+        return JsonResponse({'error': str(e)}, status=500)
+
+@login_required
+def quiz_results(request, quiz_id):
+    """Display quiz results."""
+    attempt = get_object_or_404(QuizAttempt, quiz_id=quiz_id, user=request.user)
+    incorrect_questions = []
+
+    # Identify incorrect questions
+    for answer in attempt.answers:
+        try:
+            question_index = answer.get('questionIndex')  # Use `questionIndex` from answers
+            selected_option = answer.get('selectedOption')
+
+            # Ensure question_index exists and is valid
+            if question_index is None:
+                continue
+
+            # Retrieve the question based on the index
+            question = attempt.quiz.questions.all()[question_index]
+
+            # Compare selected option with correct option
+            if question.correct_option != selected_option:
+                incorrect_questions.append({
+                    'question': question.text,
+                    'selectedOption': question.options[selected_option],
+                    'correctOption': question.options[question.correct_option],
+                    'explanation': question.explanation,
+                })
+        except Exception as e:
+            continue
+
+    context = {
+        'attempt': attempt,
+        'incorrect_questions': incorrect_questions,
+        'time_taken': attempt.completed_at - attempt.started_at,
+    }
+    return render(request, 'core/quiz_results.html', context)
+
+@login_required
+def quiz_history(request):
+    """Display user's quiz history with pagination."""
+    attempts = QuizAttempt.objects.filter(user=request.user).select_related('quiz').order_by('-completed_at')
+    paginator = Paginator(attempts, 10)  # 10 attempts per page
+    page = request.GET.get('page')
+    attempts_page = paginator.get_page(page)
+
+    # Cache user statistics
+    cache_key = f'user_stats_{request.user.id}'
+    user_stats = cache.get(cache_key)
+    if not user_stats:
+        user_stats = QuizAttempt.get_user_statistics(request.user)
+        cache.set(cache_key, user_stats, 3600)  # Cache for 1 hour
+
+    context = {
+        'attempts': attempts_page,
+        'statistics': user_stats,
+    }
+    return render(request, 'core/quiz_history.html', context)
+
+
+from django.http import JsonResponse
+from django.views.decorators.csrf import csrf_protect
+from .models import Quiz, Question
+import json # Assuming the generator is imported from a separate module
+
+@csrf_protect
+def generate_quiz(request):
+    """Generate a new quiz."""
+    if request.method != 'POST':
+        return JsonResponse({'error': 'Method not allowed'}, status=405)
+
+    try:
+        # Parse JSON request body
+        data = json.loads(request.body)
+        topic = data.get('topic')
+        context = data.get('context', '')
+
+        # Validate input
+        if not topic:
+            return JsonResponse({'error': 'Topic is required'}, status=400)
+
+        # Use the existing QuizGenerator class to generate the quiz
+        quiz_generator = QuizGenerator()
+        quiz_data = quiz_generator.generate_quiz(topic, context)
+
+        # Validate quiz data
+        if not quiz_data or 'questions' not in quiz_data:
+            return JsonResponse({'error': 'Failed to generate quiz, please try again.'}, status=500)
+
+        # Create a Quiz object
+        quiz = Quiz.objects.create(
+            title=quiz_data['title'],
+            topic=topic,
+            context=context,
+            created_by=request.user,
+        )
+
+        # Create Question objects
+        for question in quiz_data['questions']:
+            Question.objects.create(
+                quiz=quiz,
+                text=question['text'],
+                options=question['options'],
+                correct_option=question['correctOption'],
+                explanation=question.get('explanation', ''),
+            )
+
+        # Return the generated quiz details
+        return JsonResponse({
+            'quizId': quiz.id,
+            'title': quiz.title,
+            'context': quiz.context,
+            'quizUrl': f"/quiz/attempt/{quiz.id}/",  # Return a URL to redirect to attempt page
+        })
+
+    except json.JSONDecodeError:
+        return JsonResponse({'error': 'Invalid JSON format'}, status=400)
+    except Exception as e:
+        # Catch any other exceptions
+        print(f"Error in generate_quiz: {str(e)}")
+        return JsonResponse({'error': 'An unexpected error occurred. Please try again later.'}, status=500)
+
+
+
+# # core/views.py
+# from django.contrib.auth.decorators import login_required
+# from django.shortcuts import render, get_object_or_404, redirect
+# from django.http import JsonResponse
+# from .models import Quiz, QuizAttempt
+
+# def quiz_home(request):
+#     """Render the quiz generator template"""
+#     context = {
+#         'recent_quizzes': Quiz.objects.order_by('-created_at')[:5]
+#     }
+#     return render(request, 'core/quiz_generator.html', context)
+
+# @login_required
+# def attempt_quiz(request, quiz_id):
+#     """Handle quiz attempts"""
+#     quiz = get_object_or_404(Quiz, id=quiz_id)
+    
+#     # Add check for quiz accessibility
+#     if not quiz.is_active:
+#         messages.error(request, "This quiz is no longer available.")
+#         return redirect('quiz_home')
+    
+#     # Check if user has already attempted this quiz
+#     existing_attempt = QuizAttempt.objects.filter(quiz=quiz, user=request.user).first()
+#     if existing_attempt:
+#         return redirect('quiz_results', quiz_id=quiz_id)
+    
+#     context = {
+#         'quiz': quiz,
+#         'quizId' : quiz_id,
+#         'questions': quiz.get_questions()
+#     }
+#     return render(request, 'core/quiz_attempt.html', context)
+
+
+
+# @login_required
+# def quiz_results(request, quiz_id):
+#     """Display quiz results"""
+#     attempt = get_object_or_404(QuizAttempt, quiz_id=quiz_id, user=request.user)
+#     context = {
+#         'attempt': attempt,
+#         'incorrect_questions': attempt.get_incorrect_questions(),
+#         'time_taken': attempt.time_taken()
+#     }
+#     return render(request, 'core/quiz_results.html', context)
+
+# from django.core.cache import cache
+# from django.core.paginator import Paginator
+
+# @login_required
+# def quiz_history(request):
+#     """Display user's quiz history with pagination"""
+#     attempts = QuizAttempt.objects.filter(user=request.user)\
+#         .select_related('quiz')\
+#         .order_by('-completed_at')
+    
+#     paginator = Paginator(attempts, 10)  # Show 10 attempts per page
+#     page = request.GET.get('page')
+#     attempts_page = paginator.get_page(page)
+    
+#     # Get user statistics from cache or calculate
+#     cache_key = f'user_stats_{request.user.id}'
+#     user_stats = cache.get(cache_key)
+#     if not user_stats:
+#         user_stats = QuizAttempt.get_user_statistics(request.user)
+#         cache.set(cache_key, user_stats, 3600)  # Cache for 1 hour
+    
+#     context = {
+#         'attempts': attempts_page,
+#         'statistics': user_stats
+#     }
+#     return render(request, 'core/quiz_history.html', context)
+
+
+# @login_required
+# def generate_quiz(request):
+#     """Generate a new quiz"""
+#     if request.method != 'POST':
+#         return JsonResponse({'error': 'Method not allowed'}, status=405)
+    
+#     try:
+#         data = json.loads(request.body)
+#         topic = data.get('topic')
+#         context = data.get('context')
+        
+#         if not topic:
+#             return JsonResponse({'error': 'Topic is required'}, status=400)
+        
+#         quiz_generator = QuizGenerator()
+#         quiz_data = quiz_generator.generate_quiz(topic, context)
+        
+#         if not quiz_data:
+#             return JsonResponse({
+#                 'error': 'Failed to generate quiz',
+#                 'details': 'Invalid response from AI model'
+#             }, status=500)
+            
+#         # Save quiz to database
+#         quiz = Quiz.objects.create(
+#             title=quiz_data['title'],
+#             topic=topic,
+#             context=context,
+#             questions=quiz_data['questions'],
+#             time_limit=quiz_data.get('timeLimit', 600),
+#             created_by=request.user
+#         )
+        
+#         return JsonResponse({
+#             'id': quiz.id,
+#             'title': quiz.title,
+#             'timeLimit': quiz.time_limit,
+#             'questions': quiz.get_questions()  # Using the method to exclude answers
+#         })
+        
+#     except Exception as e:
+#         print(f"Error generating quiz: {str(e)}")
+#         return JsonResponse({'error': str(e)}, status=500)
+
+
+
+# views.py
+import json
+from django.shortcuts import render
+from django.http import JsonResponse
+from django.views.decorators.csrf import csrf_exempt
+from django.conf import settings
+from groq import Groq
+from .models import Quiz, QuizAttempt
+
+class QuizGenerator:
+    def __init__(self):
+        self.client = Groq()
+    
+    def generate_quiz(self, topic, context=None):
+        print("Fetching quiz from Groq.")
+        prompt = f"""Generate a quiz about {topic}. 
+        {f'Additional context: {context}' if context else ''}
+        
+        Create a JSON response with the following structure:
+        {{
+            "title": "Quiz title",
+            "timeLimit": 600,
+            "questions": [
+                {{
+                    "text": "Question text",
+                    "options": ["option1", "option2", "option3", "option4"],
+                    "correctOption": 0,
+                    "explanation": "Explanation for the correct answer"
+                }}
+            ]
+        }}
+        
+        Generate 10 questions with 4 options each. Ensure questions are challenging but fair.
+        Important: Return only the JSON object, no additional text before or after.
+        """
+    
+        try:
+            completion = self.client.chat.completions.create(
+                model="llama3-8b-8192",
+                messages=[{"role": "user", "content": prompt}],
+                temperature=1,
+                max_tokens=4000,
+                top_p=1,
+                stream=False,
+                stop=None,
+            )
+            
+            # Extract content and clean it
+            raw_response = completion.choices[0].message.content.strip()
+            print("Raw response from Groq:", raw_response)
+            
+            def extract_json(text):
+                # Helper function to extract and validate JSON
+                def find_json_boundaries(s):
+                    # Find all potential JSON start positions
+                    starts = [i for i, char in enumerate(s) if char == '{']
+                    # Find all potential JSON end positions
+                    ends = [i + 1 for i, char in enumerate(s) if char == '}']
+                    
+                    valid_jsons = []
+                    
+                    # Try all possible combinations of starts and ends
+                    for start in starts:
+                        for end in ends:
+                            if end > start:
+                                try:
+                                    potential_json = s[start:end]
+                                    # Quick check for balanced braces
+                                    if potential_json.count('{') != potential_json.count('}'):
+                                        continue
+                                        
+                                    parsed = json.loads(potential_json)
+                                    
+                                    # Validate required structure
+                                    if all(key in parsed for key in ['title', 'timeLimit', 'questions']):
+                                        if isinstance(parsed['questions'], list):
+                                            # Validate question structure
+                                            valid_questions = all(
+                                                isinstance(q, dict) and
+                                                all(key in q for key in ['text', 'options', 'correctOption', 'explanation'])
+                                                for q in parsed['questions']
+                                            )
+                                            if valid_questions:
+                                                valid_jsons.append((parsed, len(potential_json)))
+                                                
+                                except json.JSONDecodeError:
+                                    continue
+                                
+                    # Return the longest valid JSON if found (assuming it's the most complete)
+                    return max(valid_jsons, key=lambda x: x[1])[0] if valid_jsons else None
+    
+                # Clean common formatting issues
+                text = text.replace('\n', ' ').replace('\r', ' ')
+                text = re.sub(r'```json\s*|\s*```', '', text)  # Remove markdown code blocks
+                text = re.sub(r'`', '', text)  # Remove backticks
+                
+                # Try to parse the entire text first
+                try:
+                    return json.loads(text)
+                except json.JSONDecodeError:
+                    pass
+                
+                # If that fails, try to find valid JSON within the text
+                extracted_json = find_json_boundaries(text)
+                if extracted_json:
+                    return extracted_json
+                
+                # If still no valid JSON, try more aggressive cleaning
+                text = re.sub(r'[^\x20-\x7E]', '', text)  # Remove non-printable characters
+                text = re.sub(r'\\(?!["\\/bfnrt]|u[0-9a-fA-F]{4})', '', text)  # Fix invalid escapes
+                
+                try:
+                    return json.loads(text)
+                except json.JSONDecodeError:
+                    return None
+    
+            # Try to extract and parse JSON
+            quiz_data = extract_json(raw_response)
+            
+            if quiz_data:
+                # Validate and sanitize the extracted data
+                sanitized_data = {
+                    "title": str(quiz_data.get("title", "Quiz"))[:200],  # Limit title length
+                    "timeLimit": min(max(int(quiz_data.get("timeLimit", 600)), 60), 3600),  # Limit between 1-60 minutes
+                    "questions": []
+                }
+                
+                # Process questions
+                for q in quiz_data.get("questions", [])[:10]:  # Limit to 5 questions
+                    if isinstance(q, dict):
+                        sanitized_question = {
+                            "text": str(q.get("text", ""))[:500],  # Limit question length
+                            "options": [str(opt)[:200] for opt in q.get("options", [])[:4]],  # Limit option length and count
+                            "correctOption": min(max(int(q.get("correctOption", 0)), 0), 3),  # Ensure valid option index
+                            "explanation": str(q.get("explanation", ""))[:500]  # Limit explanation length
+                        }
+                        sanitized_data["questions"].append(sanitized_question)
+                
+                return sanitized_data if sanitized_data["questions"] else None
+                
+            print("Failed to extract valid JSON from response")
+            return None
+            
+        except Exception as e:
+            print(f"Error in Groq API call: {str(e)}")
+            return None
+
+
+
+# @csrf_exempt
+# def generate_quiz(request):
+#     if request.method != 'POST':
+#         return JsonResponse({'error': 'Method not allowed'}, status=405)
+    
+#     try:
+#         data = json.loads(request.body)
+#         topic = data.get('topic')
+#         context = data.get('context')
+        
+#         if not topic:
+#             return JsonResponse({'error': 'Topic is required'}, status=400)
+        
+#         quiz_generator = QuizGenerator()
+#         quiz_data = quiz_generator.generate_quiz(topic, context)
+        
+#         if not quiz_data:
+#             print("Quiz generation failed: quiz_data is None")
+#             return JsonResponse({
+#                 'error': 'Failed to generate quiz. Please try again.',
+#                 'details': 'Invalid response format from AI model'
+#             }, status=500)
+        
+#         try:
+#             # Save quiz to database
+#             quiz = Quiz.objects.create(
+#                 title=quiz_data['title'],
+#                 topic=topic,
+#                 context=context,
+#                 questions=quiz_data['questions'],
+#                 time_limit=quiz_data.get('timeLimit', 600)
+#             )
+            
+#             response_data = {
+#                 'id': quiz.id,
+#                 'title': quiz_data['title'],
+#                 'timeLimit': quiz_data['timeLimit'],
+#                 'questions': [
+#                     {
+#                         'text': q['text'],
+#                         'options': q['options']
+#                     } for q in quiz_data['questions']
+#                 ]
+#             }
+#             return JsonResponse(response_data)
+            
+#         except Exception as e:
+#             print(f"Database error: {str(e)}")
+#             return JsonResponse({'error': 'Failed to save quiz'}, status=500)
+            
+#     except json.JSONDecodeError:
+#         return JsonResponse({'error': 'Invalid JSON in request'}, status=400)
+#     except Exception as e:
+#         print(f"Unexpected error: {str(e)}")
+#         return JsonResponse({'error': str(e)}, status=500)
+
+
+# def quiz_home(request):
+#     """Render the quiz generator template"""
+#     return render(request, 'core/quiz_generator.html')  # Updated template path
+
+
+# @csrf_exempt
+# def submit_quiz(request):
+#     """Handle quiz submission and scoring"""
+#     if request.method != 'POST':
+#         return JsonResponse({'error': 'Method not allowed'}, status=405)
+    
+#     try:
+#         data = json.loads(request.body)
+#         quiz_id = data.get('quizId')
+#         answers = data.get('answers', [])
+        
+#         if not quiz_id:
+#             return JsonResponse({'error': 'Quiz ID is required'}, status=400)
+        
+#         try:
+#             quiz = Quiz.objects.get(id=quiz_id)
+#         except Quiz.DoesNotExist:
+#             return JsonResponse({'error': 'Quiz not found'}, status=404)
+        
+#         correct_answers = 0
+#         total_questions = len(quiz.questions)
+        
+#         # Calculate score
+#         for answer in answers:
+#             question_idx = answer.get('questionIndex')
+#             selected_option = answer.get('selectedOption')
+                
+#             if question_idx < total_questions:
+#                 correct_option = quiz.questions[question_idx].get('correctOption')
+#                 if correct_option is not None and selected_option == correct_option:
+#                     correct_answers += 1
+        
+#         score = (correct_answers / total_questions) * 100 if total_questions > 0 else 0
+        
+#         # Save attempt
+#         try:
+#             attempt = QuizAttempt.objects.create(
+#                 quiz=quiz,
+#                 user=request.user if request.user.is_authenticated else None,
+#                 score=score,
+#                 answers=answers
+#             )
+#         except Exception as e:
+#             print("Error saving quiz attempt:", str(e))
+#             return JsonResponse({'error': 'Failed to save quiz attempt'}, status=500)
+        
+#         return JsonResponse({
+#             'score': score,
+#             'correctAnswers': correct_answers,
+#             'totalQuestions': total_questions,
+#             'explanations': [q.get('explanation', '') for q in quiz.questions]
+#         })
+        
+#     except json.JSONDecodeError:
+#         return JsonResponse({'error': 'Invalid JSON'}, status=400)
+#     except Exception as e:
+#         print("Error in submit_quiz view:", str(e))
+#         return JsonResponse({'error': str(e)}, status=500)

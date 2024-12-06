@@ -1,0 +1,235 @@
+{% load static %}
+
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quiz Attempt</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css">
+    <style>
+        :root {
+            --primary-color: #7C3AFF;
+            --secondary-color: #9461FF;
+            --text-light: #FFFFFF;
+            --text-dark: #1A1A1A;
+            --card-bg: rgba(255, 255, 255, 0.05);
+            --shadow-color: rgba(0, 0, 0, 0.3);
+        }
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            background: var(--text-dark);
+            color: var(--text-light);
+            margin: 0;
+            padding: 2rem 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        .quiz-container {
+            width: 100%;
+            max-width: 900px;
+            padding: 2rem;
+            border-radius: 12px;
+            background: var(--card-bg);
+            box-shadow: 0 4px 15px var(--shadow-color);
+            animation: fadeIn 0.6s ease-out;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 6px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 3px;
+            margin: 2rem 0;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #7C3AFF, #9461FF);
+            transition: width 0.3s ease;
+        }
+
+        .question-card {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 15px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            animation: slideIn 0.5s ease-out;
+        }
+
+        .option-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 1rem;
+            margin-top: 1.5rem;
+        }
+
+        .option-item {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 1rem;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .option-item.selected {
+            background: #7C3AFF;
+        }
+
+        .option-item.deselected {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .submit-btn {
+            background: var(--primary-color);
+            color: var(--text-light);
+            border: none;
+            padding: 1rem 2rem;
+            font-size: 1.2rem;
+            border-radius: 12px;
+            cursor: pointer;
+            width: 100%;
+            transition: background 0.3s ease, transform 0.3s ease;
+        }
+
+        .submit-btn:hover {
+            background: var(--secondary-color);
+            transform: translateY(-2px);
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="quiz-container animate__animated animate__fadeIn">
+        <!-- Progress Bar -->
+        <div class="progress-bar">
+            <div class="progress-fill" id="progress"></div>
+        </div>
+
+        <!-- Quiz Form -->
+        <form id="quiz-form">
+            {% csrf_token %}
+            {% for question in questions %}
+            <div class="question-card animate__animated animate__slideInUp" style="animation-delay: 100ms">
+                <h3>Question {{ forloop.counter }}</h3>
+                <p>{{ question.text }}</p>
+                <div class="option-grid">
+                    {% for option in question.options %}
+                    <div class="option-item" data-question="{{ forloop.parentloop.counter0 }}" data-option="{{ forloop.counter0 }}">
+                        <span class="option-text">{{ option }}</span>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endfor %}
+            <button type="submit" class="submit-btn">Submit Quiz</button>
+        </form>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const form = document.getElementById('quiz-form');
+            const progressElement = document.getElementById('progress');
+            const totalQuestions = {{ questions|length }};  // Proper Django template syntax
+            let answeredQuestions = 0;
+
+            // Option selection (click to select/deselect)
+            document.querySelectorAll('.option-item').forEach(option => {
+                option.addEventListener('click', function () {
+                    const questionIndex = this.dataset.question;
+
+                    // Toggle selection
+                    if (this.classList.contains('selected')) {
+                        this.classList.remove('selected');
+                    } else {
+                        // Remove selection from other options in the same question
+                        document.querySelectorAll(`.option-item[data-question="${questionIndex}"]`).forEach(opt => opt.classList.remove('selected'));
+                        this.classList.add('selected');
+                    }
+
+                    // Update progress bar
+                    answeredQuestions = document.querySelectorAll('.option-item.selected').length;
+                    const progress = (answeredQuestions / totalQuestions) * 100;
+                    progressElement.style.width = `${progress}%`;
+                });
+            });
+
+            // Form submission
+            form.addEventListener('submit', function (e) {
+                e.preventDefault();
+                const answers = [];
+
+                document.querySelectorAll('.option-item.selected').forEach(selected => {
+                    answers.push({
+                        questionIndex: parseInt(selected.dataset.question),
+                        selectedOption: parseInt(selected.dataset.option)
+                    });
+                });
+
+                // Confirm if not all questions are answered
+                if (answers.length < totalQuestions) {
+                    if (!confirm('You haven\'t answered all questions. Do you want to submit anyway?')) {
+                        return;
+                    }
+                }
+
+                // Submit answers to the server
+                fetch('{% url "submit_quiz" quiz.id %}', {  // Correctly using Django's template syntax
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': '{{ csrf_token }}'
+                    },
+                    body: JSON.stringify({
+                        quizId: {{ quiz.id }},
+                        answers: answers
+                    })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.error) {
+                        throw new Error(data.error);
+                    }
+                    window.location.href = `/quiz/results/${data.quizId}/`;  // Redirect after submission
+                })
+                .catch(error => {
+                    console.error('Error submitting quiz:', error);
+                    alert('Failed to submit quiz. Please try again.');
+                });
+            });
+        });
+    </script>
+</body>
+
+</html>

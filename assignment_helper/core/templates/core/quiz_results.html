@@ -1,0 +1,225 @@
+{% load static %}
+
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quiz Results</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css">
+    <style>
+        :root {
+            --primary-color: #7C3AFF;
+            --secondary-color: #9461FF;
+            --error-color: #FF5252;
+            --text-color: #FFFFFF;
+            --background-dark: #111111;
+            --card-bg: rgba(255, 255, 255, 0.05);
+            --shadow-color: rgba(0, 0, 0, 0.3);
+            --success-color: #4CAF50;
+            --bg-color: #121212;
+        }
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            background: var(--background-dark);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: var(--text-color);
+        }
+
+        .results-container {
+            width: 100%;
+            max-width: 900px;
+            background: var(--card-bg);
+            padding: 3rem;
+            border-radius: 20px;
+            box-shadow: 0 4px 20px var(--shadow-color);
+            animation: fadeIn 0.6s ease-out;
+        }
+
+        .score-section {
+            text-align: center;
+            padding: 30px;
+            margin-bottom: 30px;
+            background: linear-gradient(135deg, #7C3AFF, #9461FF);
+            color: var(--text-color);
+            border-radius: 12px;
+            box-shadow: 0 4px 15px var(--shadow-color);
+        }
+
+        .score {
+            font-size: 4rem;
+            font-weight: 600;
+            margin: 10px 0;
+            animation: bounceIn 0.8s ease-out;
+        }
+
+        .time-taken {
+            font-size: 1.2em;
+            color: var(--text-color);
+            opacity: 0.8;
+        }
+
+        .incorrect-questions {
+            margin-top: 50px;
+        }
+
+        .question-card {
+            background: var(--card-bg);
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 5px var(--shadow-color);
+            animation: fadeInUp 0.5s ease-out;
+        }
+
+        .question-card:hover {
+            transform: translateY(-5px);
+        }
+
+        .question-text {
+            font-weight: 500;
+            color: var(--text-color);
+            margin-bottom: 15px;
+        }
+
+        .options {
+            display: grid;
+            gap: 10px;
+            margin: 15px 0;
+        }
+
+        .option {
+            padding: 10px 15px;
+            border-radius: 5px;
+            font-size: 1.1em;
+        }
+
+        .selected-option {
+            background: #e406273b;
+            border: 1px solid var(--error-color);
+        }
+
+        .correct-option {
+            background: #05ef1946;
+            border: 1px solid var(--success-color);
+        }
+
+        .explanation {
+            margin-top: 15px;
+            padding: 15px;
+            background: #9e08d54e;
+            border-radius: 5px;
+            font-size: 1em;
+            color: var(--text-color);
+        }
+
+        .actions {
+            text-align: center;
+            margin-top: 50px;
+        }
+
+        .btn {
+            padding: 0.8rem 1.5rem;
+            background-color: var(--primary-color);
+            color: var(--text-color);
+            text-decoration: none;
+            border-radius: 12px;
+            font-weight: bold;
+            transition: background-color 0.3s ease, transform 0.3s ease;
+            display: inline-block;
+            margin: 10px 15px;
+        }
+
+        .btn:hover {
+            background-color: var(--secondary-color);
+            transform: translateY(-2px);
+        }
+
+        @keyframes bounceIn {
+            0% {
+                transform: scale(0.3);
+                opacity: 0;
+            }
+
+            50% {
+                transform: scale(1.05);
+                opacity: 0.8;
+            }
+
+            100% {
+                transform: scale(1);
+                opacity: 1;
+            }
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="results-container">
+        <div class="score-section">
+            <h1>Quiz Results</h1>
+            <div class="score">{{ attempt.score }}%</div>
+            <div class="time-taken">Time taken: {{ time_taken|time:"H:i:s" }}</div>
+        </div>
+
+        <div class="incorrect-questions">
+            <h2>Review Incorrect Answers</h2>
+            {% for question in incorrect_questions %}
+            <div class="question-card">
+                <div class="question-text">{{ question.question }}</div>
+                <div class="options">
+                    <div class="option selected-option">
+                        Your answer: {{ question.selectedOption }}
+                    </div>
+                    <div class="option correct-option">
+                        Correct answer: {{ question.correctOption }}
+                    </div>
+                </div>
+                <div class="explanation">
+                    <strong>Explanation:</strong> {{ question.explanation }}
+                </div>
+            </div>
+            {% empty %}
+            <p style="color: var(--text-color); text-align: center;">You answered all questions correctly!</p>
+            {% endfor %}
+        </div>
+
+        <div class="actions">
+            <a href="{% url 'quiz_history' %}" class="btn">View Quiz History</a>
+            <a href="{% url 'quiz_home' %}" class="btn">Try Another Quiz</a>
+        </div>
+    </div>
+</body>
+
+</html>

@@ -1,0 +1,356 @@
+{% load static %}
+
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quiz History</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap"
+        rel="stylesheet">
+    <style>
+        :root {
+            --primary-color: #7C3AFF;
+            --secondary-color: #9461FF;
+            --background-dark: #111111;
+            --card-bg: rgba(255, 255, 255, 0.05);
+            --shadow-color: rgba(0, 0, 0, 0.3);
+            --success-color: #4CAF50;
+            --error-color: #FF5252;
+            --text-light: #FFFFFF;
+        }
+
+        body {
+            background-image: url("{% static 'core/images/bg.jpg' %}");
+            background-size: cover;
+            color: var(--text-light);
+            font-family: 'Poppins', sans-serif;
+            margin: 0;
+            padding: 2rem 0;
+            display: flex;
+            flex-direction: column;
+            gap: 30px;
+            justify-content: center;
+            align-items: center;
+        }
+
+           .nav {
+    display: flex;
+    justify-content: center; /* Space out navigation items */
+    align-items: center; /* Center items vertically */
+    gap: 50px;
+    background: transparent;
+    position: relative; /* Relative positioning for pseudo-elements */
+    z-index: 1000; /* Ensure the nav is above other elements */
+    opacity: 0; /* Start hidden */
+    animation: fadeIn 1s forwards; 
+}
+
+/* Fade-in animation for the nav */
+@keyframes fadeIn {
+    0% {
+        opacity: 0;
+        transform: translateY(-20px); /* Start slightly above */
+    }
+    100% {
+        opacity: 1;
+        transform: translateY(0); /* End at original position */
+    }
+}
+
+/* Navigation Link Styles */
+.nav a {
+    background: linear-gradient(135deg, #7C3AFF, #9b59b6); /* Gradient background for links */
+    padding: 10px 20px; /* Padding for better touch targets */
+    color: #fff; /* Text color */
+    text-decoration: none; /* Remove underline from links */
+    text-align: center; /* Center text */
+    border-radius: 15px; /* Rounded corners for links */
+    transition: transform 0.3s ease, box-shadow 0.3s ease, background 0.3s ease; /* Smooth transitions */
+    display: inline-block; /* Ensures padding is applied correctly */
+    position: relative; /* For positioning pseudo-elements */
+    opacity: 0; /* Start hidden */
+    animation: slideIn 0.5s forwards; /* Animation for each link */
+}
+
+/* Animation for each link */
+@keyframes slideIn {
+    0% {
+        opacity: 0;
+        transform: translateX(50px); /* Start from the right */
+    }
+    100% {
+        opacity: 1;
+        transform: translateX(0); /* End at original position */
+    }
+}
+
+/* Delay the animation for the first half of the nav items */
+.nav a:nth-child(-n+2) {
+    animation-delay: 0.1s; /* Delay for the first two items */
+}
+
+/* Delay the animation for the second half of the nav items */
+.nav a:nth-child(n+3) {
+    animation-delay: 0.3s; /* Delay for the next items */
+}
+
+/* 3D Hover Effects for Links */
+.nav a:hover {
+    transform: translateY(-5px) rotateX(5deg) rotateY(5deg); /* 3D lift effect */
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4); /* Deeper shadow on hover */
+}
+
+/* Pseudo-element for 3D Effect */
+.nav a::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(255, 255, 255, 0.2); /* Light overlay for depth */
+    border-radius: 15px; /* Match the border radius */
+    transform: scale(0); /* Start hidden */
+    transition: transform 0.3s ease; /* Smooth transition */
+    z-index: 0; /* Behind the text */
+}
+
+.nav a:hover::before {
+    transform: scale(1); /* Show overlay on hover */
+}
+
+        .history-container {
+            width: 100%;
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 2rem;
+            border-radius: 12px;
+            background: #141414;
+            box-shadow: 0 4px 15px var(--shadow-color);
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+
+        .history-title {
+            font-size: 2.5rem;
+            color: var(--primary-color);
+            text-shadow: 1px 1px 4px var(--shadow-color);
+            margin-bottom: 1rem;
+        }
+
+        .stats-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .stat-card {
+            background: #1B1B1B;
+            padding: 1.5rem;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px var(--shadow-color);
+            text-align: center;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 20px var(--shadow-color);
+        }
+
+        .stat-value {
+            font-size: 2rem;
+            color: var(--primary-color);
+            font-weight: bold;
+        }
+
+        .stat-label {
+            color: var(--text-light);
+            margin-top: 0.5rem;
+        }
+
+        .attempts-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .attempt-card {
+            background: #1B1B1B;
+            padding: 1.5rem;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px var(--shadow-color);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            animation: fadeIn 0.5s ease;
+        }
+
+        .attempt-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 20px var(--shadow-color);
+        }
+
+        .quiz-title {
+            font-size: 1.5rem;
+            color: var(--primary-color);
+            margin-bottom: 1rem;
+        }
+
+        .quiz-title:hover {
+            color: var(--secondary-color);
+        }
+
+        .detail-item {
+            margin-bottom: 1rem;
+        }
+
+        .detail-label {
+            font-size: 1rem;
+            color: var(--text-light);
+        }
+
+        .detail-value {
+            font-size: 1.2rem;
+            color: var(--text-light);
+            font-weight: bold;
+        }
+
+        .score-badge {
+            padding: 0.5rem 1rem;
+            border-radius: 12px;
+            color: #FFF;
+            font-weight: bold;
+            display: inline-block;
+        }
+
+        .score-high {
+            background-color: var(--success-color);
+        }
+
+        .score-medium {
+            background-color: #FF9800;
+            /* Orange */
+        }
+
+        .score-low {
+            background-color: var(--error-color);
+        }
+
+        .actions {
+            margin-top: 1rem;
+            display: flex;
+            gap: 1rem;
+        }
+
+        .btn {
+            padding: 0.7rem 1.5rem;
+            border: none;
+            border-radius: 12px;
+            font-size: 1rem;
+            font-weight: bold;
+            text-decoration: none;
+            color: #FFF;
+            background: var(--primary-color);
+            text-align: center;
+            cursor: pointer;
+            transition: background-color 0.3s ease, transform 0.3s ease;
+        }
+
+        .btn:hover {
+            background: var(--secondary-color);
+            transform: translateY(-2px);
+        }
+
+        @media (max-width: 768px) {
+            .history-container {
+                padding: 1.5rem;
+            }
+
+            .stat-card,
+            .attempt-card {
+                padding: 1rem;
+            }
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <nav class="nav">
+        <a href="{% url 'saved_files' %}">Switch to Assignment Section</a>
+        <a href="{% url 'quiz_history' %}">Quiz History</a>
+        <a href="{% url 'quiz_home' %}">Home</a>
+        {% if user.is_authenticated %}
+        <a href="{% url 'log_out' %}" class="nav-br-buttons">Logout</a>
+        {% endif %}
+    </nav>
+    <div class="history-container">
+        <div class="header">
+            <h1 class="history-title">Your Quiz History</h1>
+        </div>
+
+        <div class="stats-container">
+            <div class="stat-card">
+                <div class="stat-value">{{ statistics.total_attempts }}</div>
+                <div class="stat-label">Total Attempts</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value">{{ statistics.average_score|floatformat:1 }}%</div>
+                <div class="stat-label">Average Score</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value">{{ statistics.highest_score|floatformat:1 }}%</div>
+                <div class="stat-label">Highest Score</div>
+            </div>
+        </div>
+
+        <div class="attempts-grid">
+            {% for attempt in attempts %}
+            <div class="attempt-card">
+                <h3 class="quiz-title">{{ attempt.quiz.title }}</h3>
+                <div class="detail-item">
+                    <div class="detail-label">Score:</div>
+                    <div
+                        class="score-badge {% if attempt.score >= 80 %}score-high{% elif attempt.score >= 60 %}score-medium{% else %}score-low{% endif %}">
+                        {{ attempt.score|floatformat:1 }}%
+                    </div>
+                </div>
+                <div class="detail-item">
+                    <div class="detail-label">Date:</div>
+                    <div class="detail-value">{{ attempt.completed_at|date:"M d, Y" }}</div>
+                </div>
+                <div class="actions">
+                    <a href="{% url 'quiz_results' attempt.quiz.id %}" class="btn">View Results</a>
+                    <a href="{% url 'attempt_quiz' attempt.quiz.id %}" class="btn">Retake Quiz</a>
+                </div>
+            </div>
+            {% empty %}
+            <div class="attempt-card">
+                <p style="text-align: center; color: var(--text-light);">You haven't attempted any quizzes yet.</p>
+                <div style="text-align: center; margin-top: 1rem;">
+                    <a href="{% url 'quiz_home' %}" class="btn">Take Your First Quiz</a>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</body>
+
+</html>
