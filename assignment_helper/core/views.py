@@ -68,6 +68,282 @@ def log_out(request):
     logout(request)
     return redirect('login')
 
+import math
+import datetime
+class QuestionBankPDF(FPDF):
+    def __init__(self):
+        super().__init__()
+        self.add_fonts()
+        # Enhanced color palette
+        self.primary_color = (0, 51, 102)     # Navy Blue
+        self.secondary_color = (70, 70, 70)    # Dark Gray
+        self.accent_color = (0, 102, 204)      # Blue
+        self.light_gray = (220, 220, 220)      # Light Gray
+        self.success_color = (46, 125, 50)     # Green
+        self.warning_color = (255, 153, 0)     # Orange
+        self.highlight_color = (247, 247, 247) # Off-white
+        
+        # Set default margins
+        self.set_margins(15, 15, 15)
+        self.set_auto_page_break(auto=True, margin=25)
+
+    def add_fonts(self):
+        font_path = os.path.join(settings.BASE_DIR, 'core/fonts')
+        fonts = {
+            'OpenSans': ['', 'B', 'I', 'BI'],
+            'Roboto': ['', 'B'],
+            'Lato': ['', 'B', 'I']
+        }
+        
+        for font_name, styles in fonts.items():
+            for style in styles:
+                filename = f'{font_name}-{style if style else "Regular"}.ttf'
+                self.add_font(font_name, style, os.path.join(font_path, filename), uni=True)
+
+    def header(self):
+        # Gradient header background
+        self.set_fill_color(*self.light_gray)
+        self.rect(0, 0, 210, 45, 'F')
+        
+        # Add decorative line
+        self.set_draw_color(*self.accent_color)
+        self.set_line_width(0.5)
+        self.line(10, 44, 200, 44)
+        
+        # Logo with shadow effect
+        logo_path = os.path.join(settings.BASE_DIR, 'logo.png')
+        if os.path.exists(logo_path):
+            self.image(logo_path, 12, 8, 30)
+            # Add shadow effect
+            self.set_fill_color(200, 200, 200)
+            self.rect(13, 9, 30, 30, 'F')
+            self.image(logo_path, 12, 8, 30)
+
+        # Header Text with enhanced typography
+        self.set_font("OpenSans", 'B', 18)
+        self.set_text_color(*self.primary_color)
+        self.cell(40)  # Space for logo
+        self.cell(0, 12, 'RNS INSTITUTE OF TECHNOLOGY', 0, 1, 'C')
+        
+        self.set_font("Lato", 'I', 12)
+        self.set_text_color(*self.secondary_color)
+        self.cell(40)
+        self.cell(0, 8, 'Autonomous Institution Affiliated to VTU', 0, 1, 'C')
+        
+        self.set_font("Roboto", 'B', 14)
+        self.set_text_color(*self.accent_color)
+        self.cell(40)
+        self.cell(0, 8, 'Assignment 2: CLOUD COMPUTING', 0, 1, 'C')
+        self.ln(15)
+
+    def footer(self):
+        self.set_y(-30)
+        
+        # Footer background
+        self.set_fill_color(*self.highlight_color)
+        self.rect(0, self.get_y(), 210, 30, 'F')
+        
+        # Add decorative elements
+        self.set_draw_color(*self.accent_color)
+        self.set_line_width(0.5)
+        self.line(10, self.get_y(), 200, self.get_y())
+        
+        # Footer content
+        self.set_font("OpenSans", '', 8)
+        self.set_text_color(*self.secondary_color)
+        self.cell(0, 10, f'Generated using Assignment Mate - Page {self.page_no()}', 0, 1, 'C')
+
+    def add_section_header(self, text, include_line=True):
+        # Add subtle background
+        self.set_fill_color(*self.highlight_color)
+        self.rect(10, self.get_y(), 190, 12, 'F')
+        
+        # Section header text
+        self.set_font('Roboto', 'B', 14)
+        self.set_text_color(*self.primary_color)
+        self.cell(0, 10, text, 0, 1, 'L')
+        
+        if include_line:
+            self.set_draw_color(*self.accent_color)
+            self.set_line_width(0.3)
+            self.line(10, self.get_y(), 200, self.get_y())
+        
+        self.ln(5)
+
+    def chapter_title(self, num, title):
+        # Question number with gradient background
+        self.set_fill_color(*self.primary_color)
+        self.set_font('OpenSans', 'B', 14)
+        self.set_text_color(255, 255, 255)
+        
+        # Add rounded rectangle for question number
+        self.rounded_rect(10, self.get_y(), 45, 10, 2, 'F')
+        self.cell(45, 10, f'Question {num}', 0, 0, 'C')
+        
+        # Question text with subtle background
+        self.ln(12)
+        self.set_fill_color(*self.highlight_color)
+        self.set_font('OpenSans', 'B', 12)
+        self.set_text_color(*self.secondary_color)
+        self.multi_cell(0, 10, title, border='B', fill=True)
+        self.ln(4)
+
+    def write_html(self, html_text):
+        """
+            Enhanced HTML parser and writer with recursion protection
+        """
+        soup = BeautifulSoup(html_text, 'html.parser')
+                    
+        def write_paragraph(text, indent=0, style=''):
+            """Helper function to write paragraphs with proper formatting"""
+            self.set_x(20 + indent)
+            self.set_font('OpenSans', style, 11)
+            self.multi_cell(170 - indent, 8, text.strip(), align='J')
+            self.ln(4)
+
+        def process_element(element, list_level=0):
+            """Process individual elements with recursion protection"""
+            if not element or (not element.name and not element.string):
+                return
+                            
+                        # Handle headings
+            if element.name in ['h1', 'h2', 'h3', 'h4']:
+                self.ln(5)
+                size = 16 - (int(element.name[1]) * 2)
+                self.set_font('Roboto', 'B', size)
+                self.set_text_color(*self.primary_color)
+                write_paragraph(element.text, indent=0)
+                self.set_text_color(*self.secondary_color)
+                self.ln(5)
+                        
+                        # Handle bold text
+            elif element.name in ['strong', 'b']:
+                self.set_font('OpenSans', 'B', 11)
+                self.write(8, element.get_text(strip=True) + ' ')
+                self.set_font('OpenSans', '', 11)
+                        
+                        # Handle italic text
+            elif element.name in ['em', 'i']:
+                self.set_font('OpenSans', 'I', 11)
+                self.write(8, element.get_text(strip=True) + ' ')
+                self.set_font('OpenSans', '', 11)
+                        
+                        # Handle unordered lists
+            elif element.name == 'ul':
+                self.ln(5)
+                for li in element.find_all('li', recursive=False):
+                    bullet = '•' if list_level == 0 else '◦' if list_level == 1 else '‣'
+                    self.set_x(20 + ((list_level + 1) * 10))
+                    self.set_font('OpenSans', '', 11)
+                    self.write(8, f'{bullet} {li.get_text(strip=True)}')
+                    self.ln(8)
+                self.ln(5)
+                        
+                        # Handle ordered lists
+            elif element.name == 'ol':
+                self.ln(5)
+                for i, li in enumerate(element.find_all('li', recursive=False), 1):
+                    self.set_x(20 + ((list_level + 1) * 10))
+                    self.set_font('OpenSans', '', 11)
+                    self.write(8, f'{i}. {li.get_text(strip=True)}')
+                    self.ln(8)
+                self.ln(5)
+                        
+                        # Handle paragraphs
+            elif element.name == 'p':
+                self.ln(2)
+                write_paragraph(element.get_text(strip=True))
+                self.ln(4)
+                        
+                        # Handle plain text
+            elif element.string and element.string.strip():
+                text = element.string.strip()
+                if text:
+                    current_x = self.get_x()
+                    if current_x == self.l_margin:
+                        self.set_x(20)
+                    self.write(8, text + ' ')
+
+                    # Process top-level elements only
+        for element in soup.children:
+            process_element(element)
+                                
+                    # Ensure proper spacing after all content
+        self.ln(4)
+
+
+
+    def rounded_rect(self, x, y, w, h, r, style=''):
+        # Helper method to draw rounded rectangles
+        k = 0.4477
+        self.set_line_width(0.5)
+        
+        self.line(x+r, y, x+w-r, y)
+        self.line(x+r, y+h, x+w-r, y+h)
+        self.line(x, y+r, x, y+h-r)
+        self.line(x+w, y+r, x+w, y+h-r)
+        
+
+    def add_question(self, num, question, answer=None):
+        if self.get_y() > 250:
+            self.add_page()
+
+        self.chapter_title(num, question + '?')
+        
+        if answer:
+            # Answer section with enhanced formatting
+            self.set_font('Roboto', 'B', 12)
+            self.set_text_color(*self.success_color)
+            self.cell(0, 10, 'Answer:', 0, 1, 'L')
+            
+            # Add subtle background for answer
+            answer_height = self.get_string_height(answer, 170)
+            self.set_fill_color(*self.highlight_color)
+            self.rect(20, self.get_y(), 170, answer_height + 10, 'F')
+            
+            # Answer content with HTML support
+            self.set_font('OpenSans', '', 11)
+            self.set_text_color(*self.secondary_color)
+            self.set_x(25)
+            
+            # Handle HTML content
+            self.write_html(answer)
+            
+            # Spacing and separator
+            self.ln(10)
+            self.draw_separator()
+            self.ln(10)
+
+    import math
+    def get_string_height(self, text, width):
+        """Calculate height needed for HTML text"""
+        soup = BeautifulSoup(text, 'html.parser')
+        plain_text = soup.get_text('\n')
+        lines = 0
+        
+        # Count lines in paragraphs
+        paragraphs = plain_text.split('\n')
+        for paragraph in paragraphs:
+            if paragraph.strip():
+                lines += math.ceil(self.get_string_width(paragraph) / width)
+        
+        # Add extra space for lists
+        lines += len(soup.find_all(['li'])) * 1.2
+        
+        return lines * 8
+
+    def draw_separator(self):
+        # Draw decorative separator
+        self.set_draw_color(*self.light_gray)
+        self.set_line_width(0.5)
+        
+        # Dotted line effect
+        x = 10
+        while x < 200:
+            self.line(x, self.get_y(), x + 3, self.get_y())
+            x += 6
+
+
 
 from django.db import IntegrityError
 @login_required
@@ -566,7 +842,7 @@ h2 {{
     </head>
     <body>
         <div class="cover">
-            <h1>Assignment Mate</h1>
+            <h1>University Question Bank</h1>
             <h2>A comprehensive compilation of important questions</h2>
             {generate_metadata_section(metadata)}
         </div>
