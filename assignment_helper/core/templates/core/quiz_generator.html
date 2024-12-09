@@ -1,0 +1,297 @@
+{% load static %}
+
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Quiz Generator</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css">
+    <style>
+        :root {
+            --primary-color: #7C3AFF;
+            --secondary-color: #9461FF;
+            --text-light: #FFFFFF;
+            --text-dark: #1A1A1A;
+            --card-bg: rgba(255, 255, 255, 0.05);
+            --shadow-color: rgba(0, 0, 0, 0.3);
+        }
+
+        .nav {
+    display: flex;
+    justify-content: center; /* Space out navigation items */
+    align-items: center; /* Center items vertically */
+    gap: 50px;
+    background: transparent;
+    position: relative; /* Relative positioning for pseudo-elements */
+    z-index: 1000; /* Ensure the nav is above other elements */
+    opacity: 0; /* Start hidden */
+    animation: fadeIn 1s forwards; 
+}
+
+/* Fade-in animation for the nav */
+@keyframes fadeIn {
+    0% {
+        opacity: 0;
+        transform: translateY(-20px); /* Start slightly above */
+    }
+    100% {
+        opacity: 1;
+        transform: translateY(0); /* End at original position */
+    }
+}
+
+/* Navigation Link Styles */
+.nav a {
+    background: linear-gradient(135deg, #7C3AFF, #9b59b6); /* Gradient background for links */
+    padding: 10px 20px; /* Padding for better touch targets */
+    color: #fff; /* Text color */
+    text-decoration: none; /* Remove underline from links */
+    text-align: center; /* Center text */
+    border-radius: 15px; /* Rounded corners for links */
+    transition: transform 0.3s ease, box-shadow 0.3s ease, background 0.3s ease; /* Smooth transitions */
+    display: inline-block; /* Ensures padding is applied correctly */
+    position: relative; /* For positioning pseudo-elements */
+    opacity: 0; /* Start hidden */
+    animation: slideIn 0.5s forwards; /* Animation for each link */
+}
+
+/* Animation for each link */
+@keyframes slideIn {
+    0% {
+        opacity: 0;
+        transform: translateX(50px); /* Start from the right */
+    }
+    100% {
+        opacity: 1;
+        transform: translateX(0); /* End at original position */
+    }
+}
+
+/* Delay the animation for the first half of the nav items */
+.nav a:nth-child(-n+2) {
+    animation-delay: 0.1s; /* Delay for the first two items */
+}
+
+/* Delay the animation for the second half of the nav items */
+.nav a:nth-child(n+3) {
+    animation-delay: 0.3s; /* Delay for the next items */
+}
+
+/* 3D Hover Effects for Links */
+.nav a:hover {
+    transform: translateY(-5px) rotateX(5deg) rotateY(5deg); /* 3D lift effect */
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4); /* Deeper shadow on hover */
+}
+
+/* Pseudo-element for 3D Effect */
+.nav a::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(255, 255, 255, 0.2); /* Light overlay for depth */
+    border-radius: 15px; /* Match the border radius */
+    transform: scale(0); /* Start hidden */
+    transition: transform 0.3s ease; /* Smooth transition */
+    z-index: 0; /* Behind the text */
+}
+
+.nav a:hover::before {
+    transform: scale(1); /* Show overlay on hover */
+}
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            background-image: url("{% static 'core/images/bg.jpg' %}");
+            background-size: cover;
+            color: var(--text-light);
+            margin: 0;
+            padding: 2rem 0;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        body > h1 {
+            font-size: 50px;
+            font-family: monospace;
+        }
+
+        .quiz-container {
+            width: 100%;
+            max-width: 50%;
+            padding: 2rem;
+            border-radius: 12px;
+            background: #141414;
+            box-shadow: 0 4px 15px var(--shadow-color);
+            animation: fadeIn 0.6s ease-out;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .input-section {
+            margin-bottom: 2rem;
+        }
+
+        .input-group {
+            margin-bottom: 1.5rem;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 0.8rem;
+            color: var(--text-light);
+            font-weight: 500;
+        }
+
+        input[type="text"],
+        textarea {
+            width: 95%;
+            padding: 1rem 1.5rem;
+            background: rgba(255, 255, 255, 0.1);
+            border: 2px solid rgba(124, 58, 255, 0.3);
+            border-radius: 12px;
+            color: var(--text-light);
+            font-size: 1rem;
+            transition: all 0.3s ease;
+        }
+
+        input[type="text"]:focus,
+        textarea:focus {
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 4px rgba(124, 58, 255, 0.2);
+            outline: none;
+        }
+
+        .btn {
+            background: var(--primary-color);
+            color: var(--text-light);
+            border: none;
+            padding: 1rem 2rem;
+            font-size: 1.2rem;
+            border-radius: 12px;
+            cursor: pointer;
+            width: fit-content;
+            transition: all 0.3s ease;
+        }
+
+        .btn:hover {
+            background: var(--secondary-color);
+            transform: translateY(-2px);
+        }
+
+        .btn:disabled {
+            opacity: 0.7;
+            cursor: not-allowed;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <nav class="nav">
+        <a href="{% url 'saved_files' %}">Switch to Assignment Section</a>
+        <a href="{% url 'quiz_history' %}">Quiz History</a>
+        <a href="{% url 'quiz_home' %}">Home</a>
+        {% if user.is_authenticated %}
+        <a href="{% url 'log_out' %}" class="nav-br-buttons">Logout</a>
+        {% endif %}
+    </nav>
+    <h1>Quiz Generator</h1>
+    <div class="quiz-container animate__animated animate__fadeIn">
+        <div class="input-section">
+            <div class="input-group">
+                <label for="topic">Quiz Topic</label>
+                <input type="text" id="topic" placeholder="Enter the topic for your quiz">
+            </div>
+            <div class="input-group">
+                <label for="context">Additional Context (Optional)</label>
+                <textarea id="context" rows="4"
+                    placeholder="Add any additional context or specific requirements"></textarea>
+            </div>
+            <button class="btn" id="generateBtn">Generate Quiz</button>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const generateBtn = document.getElementById('generateBtn');
+
+            generateBtn.addEventListener('click', async function () {
+                const topic = document.getElementById('topic').value;
+                const context = document.getElementById('context').value;
+
+                if (!topic) {
+                    alert('Please enter a topic for the quiz');
+                    return;
+                }
+
+                generateBtn.disabled = true;
+                generateBtn.textContent = 'Generating Quiz...';
+
+                try {
+                    const response = await fetch('/generate-quiz/', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRFToken': getCookie('csrftoken')
+                        },
+                        body: JSON.stringify({ topic, context })
+                    });
+
+                    const quiz = await response.json();
+
+                    if (quiz.error) {
+                        throw new Error(quiz.error);
+                    }
+
+                    // Redirect to the quiz attempt page
+                     window.location.href = quiz.quizUrl;
+
+                } catch (error) {
+                    console.error('Error generating quiz:', error);
+                    alert('Failed to generate quiz. Please try again.');
+                } finally {
+                    generateBtn.disabled = false;
+                    generateBtn.textContent = 'Generate Quiz';
+                }
+            });
+
+            function getCookie(name) {
+                let cookieValue = null;
+                if (document.cookie && document.cookie !== '') {
+                    const cookies = document.cookie.split(';');
+                    for (let i = 0; i < cookies.length; i++) {
+                        const cookie = cookies[i].trim();
+                        if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                            cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                            break;
+                        }
+                    }
+                }
+                return cookieValue;
+            }
+        });
+    </script>
+</body>
+
+</html>

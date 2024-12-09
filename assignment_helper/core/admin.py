@@ -1,17 +1,27 @@
+# admin.py
 from django.contrib import admin
-from .models import APIResponse, Document
+from .models import Document, APIResponse, Quiz, QuizAttempt
 
-# Customizing the APIResponse admin interface
-class APIResponseAdmin(admin.ModelAdmin):
-    list_display = ('question_id', 'question', 'answer', 'document', 'created_at', 'user')  # Include question_id
-    search_fields = ('question', 'answer', 'question_id')  # Enable search on question, answer, and question_id
-    list_filter = ('document',)  # Filter by document in the admin interface
-
-# Customizing the Document admin interface
+@admin.register(Document)
 class DocumentAdmin(admin.ModelAdmin):
-    list_display = ('name', 'file', 'uploaded_at')  # Display fields in the list view
-    search_fields = ('name',)  # Enable search on the document name
+    list_display = ('name', 'uploaded_at', 'user')
+    search_fields = ('name', 'user__username')
+    list_filter = ('uploaded_at', 'user')
 
-# Registering the models with their respective admin classes
-admin.site.register(APIResponse, APIResponseAdmin)
-admin.site.register(Document, DocumentAdmin)
+@admin.register(APIResponse)
+class APIResponseAdmin(admin.ModelAdmin):
+    list_display = ('question', 'answer', 'document', 'created_at', 'user')
+    search_fields = ('question', 'document__name', 'user__username')
+    list_filter = ('created_at', 'document', 'user')
+
+@admin.register(Quiz)
+class QuizAdmin(admin.ModelAdmin):
+    list_display = ('title', 'topic', 'created_at', 'id')
+    search_fields = ('title', 'topic')
+    list_filter = ('created_at',)
+
+@admin.register(QuizAttempt)
+class QuizAttemptAdmin(admin.ModelAdmin):
+    list_display = ('quiz', 'user', 'score', 'started_at', 'completed_at')
+    search_fields = ('quiz__title', 'user__username')
+    list_filter = ('started_at', 'completed_at', 'quiz')
