@@ -25,6 +25,7 @@
     <nav class="nav">
         <a href="{% url 'index' %}">Home</a>
         <a href="{% url 'upload_pdf' %}">Upload Files</a>
+        <a href="{% url 'pdf_chat_home' %}">Chat with PDFs</a>
         <a href="{% url 'saved_files' %}">Your Work</a>
         <a href="{% url 'quiz_home' %}">Quiz Section</a>
         {% if user.is_authenticated %}

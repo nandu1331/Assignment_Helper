@@ -1,6 +1,5 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from .forms import PDFUploadForm
-import google.generativeai as genai
 import os
 from fpdf import FPDF
 import re
@@ -14,14 +13,11 @@ from django.conf import settings
 import pdfplumber
 import spacy
 from nltk.corpus import words
-import google
 import json
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth import authenticate, login
 from django.contrib import messages
 from .forms import CustomLoginForm
-# Configure the Gemini API
-genai.configure(api_key=os.environ['API_KEY'])
 
 # Load the English NLP model
 nlp = spacy.load("en_core_web_sm")
@@ -1454,139 +1450,6 @@ def generate_quiz(request):
         print(f"Error in generate_quiz: {str(e)}")
         return JsonResponse({'error': 'An unexpected error occurred. Please try again later.'}, status=500)
 
-
-
-# # core/views.py
-# from django.contrib.auth.decorators import login_required
-# from django.shortcuts import render, get_object_or_404, redirect
-# from django.http import JsonResponse
-# from .models import Quiz, QuizAttempt
-
-# def quiz_home(request):
-#     """Render the quiz generator template"""
-#     context = {
-#         'recent_quizzes': Quiz.objects.order_by('-created_at')[:5]
-#     }
-#     return render(request, 'core/quiz_generator.html', context)
-
-# @login_required
-# def attempt_quiz(request, quiz_id):
-#     """Handle quiz attempts"""
-#     quiz = get_object_or_404(Quiz, id=quiz_id)
-    
-#     # Add check for quiz accessibility
-#     if not quiz.is_active:
-#         messages.error(request, "This quiz is no longer available.")
-#         return redirect('quiz_home')
-    
-#     # Check if user has already attempted this quiz
-#     existing_attempt = QuizAttempt.objects.filter(quiz=quiz, user=request.user).first()
-#     if existing_attempt:
-#         return redirect('quiz_results', quiz_id=quiz_id)
-    
-#     context = {
-#         'quiz': quiz,
-#         'quizId' : quiz_id,
-#         'questions': quiz.get_questions()
-#     }
-#     return render(request, 'core/quiz_attempt.html', context)
-
-
-
-# @login_required
-# def quiz_results(request, quiz_id):
-#     """Display quiz results"""
-#     attempt = get_object_or_404(QuizAttempt, quiz_id=quiz_id, user=request.user)
-#     context = {
-#         'attempt': attempt,
-#         'incorrect_questions': attempt.get_incorrect_questions(),
-#         'time_taken': attempt.time_taken()
-#     }
-#     return render(request, 'core/quiz_results.html', context)
-
-# from django.core.cache import cache
-# from django.core.paginator import Paginator
-
-# @login_required
-# def quiz_history(request):
-#     """Display user's quiz history with pagination"""
-#     attempts = QuizAttempt.objects.filter(user=request.user)\
-#         .select_related('quiz')\
-#         .order_by('-completed_at')
-    
-#     paginator = Paginator(attempts, 10)  # Show 10 attempts per page
-#     page = request.GET.get('page')
-#     attempts_page = paginator.get_page(page)
-    
-#     # Get user statistics from cache or calculate
-#     cache_key = f'user_stats_{request.user.id}'
-#     user_stats = cache.get(cache_key)
-#     if not user_stats:
-#         user_stats = QuizAttempt.get_user_statistics(request.user)
-#         cache.set(cache_key, user_stats, 3600)  # Cache for 1 hour
-    
-#     context = {
-#         'attempts': attempts_page,
-#         'statistics': user_stats
-#     }
-#     return render(request, 'core/quiz_history.html', context)
-
-
-# @login_required
-# def generate_quiz(request):
-#     """Generate a new quiz"""
-#     if request.method != 'POST':
-#         return JsonResponse({'error': 'Method not allowed'}, status=405)
-    
-#     try:
-#         data = json.loads(request.body)
-#         topic = data.get('topic')
-#         context = data.get('context')
-        
-#         if not topic:
-#             return JsonResponse({'error': 'Topic is required'}, status=400)
-        
-#         quiz_generator = QuizGenerator()
-#         quiz_data = quiz_generator.generate_quiz(topic, context)
-        
-#         if not quiz_data:
-#             return JsonResponse({
-#                 'error': 'Failed to generate quiz',
-#                 'details': 'Invalid response from AI model'
-#             }, status=500)
-            
-#         # Save quiz to database
-#         quiz = Quiz.objects.create(
-#             title=quiz_data['title'],
-#             topic=topic,
-#             context=context,
-#             questions=quiz_data['questions'],
-#             time_limit=quiz_data.get('timeLimit', 600),
-#             created_by=request.user
-#         )
-        
-#         return JsonResponse({
-#             'id': quiz.id,
-#             'title': quiz.title,
-#             'timeLimit': quiz.time_limit,
-#             'questions': quiz.get_questions()  # Using the method to exclude answers
-#         })
-        
-#     except Exception as e:
-#         print(f"Error generating quiz: {str(e)}")
-#         return JsonResponse({'error': str(e)}, status=500)
-
-
-
-# views.py
-import json
-from django.shortcuts import render
-from django.http import JsonResponse
-from django.views.decorators.csrf import csrf_exempt
-from django.conf import settings
-from groq import Groq
-from .models import Quiz, QuizAttempt
-
 class QuizGenerator:
     def __init__(self):
         self.client = Groq()
@@ -1724,126 +1587,192 @@ class QuizGenerator:
         except Exception as e:
             print(f"Error in Groq API call: {str(e)}")
             return None
+        
+from .models import PDFChatSession, ChatMessage
+from django.urls import reverse
 
-
-
-# @csrf_exempt
-# def generate_quiz(request):
-#     if request.method != 'POST':
-#         return JsonResponse({'error': 'Method not allowed'}, status=405)
+@login_required
+def pdf_chat_home(request):
+    """Display user's PDF chat sessions and option to start new ones."""
+    active_sessions = PDFChatSession.objects.filter(
+        user=request.user,
+        is_active=True
+    ).select_related('pdf_document')
     
-#     try:
-#         data = json.loads(request.body)
-#         topic = data.get('topic')
-#         context = data.get('context')
-        
-#         if not topic:
-#             return JsonResponse({'error': 'Topic is required'}, status=400)
-        
-#         quiz_generator = QuizGenerator()
-#         quiz_data = quiz_generator.generate_quiz(topic, context)
-        
-#         if not quiz_data:
-#             print("Quiz generation failed: quiz_data is None")
-#             return JsonResponse({
-#                 'error': 'Failed to generate quiz. Please try again.',
-#                 'details': 'Invalid response format from AI model'
-#             }, status=500)
-        
-#         try:
-#             # Save quiz to database
-#             quiz = Quiz.objects.create(
-#                 title=quiz_data['title'],
-#                 topic=topic,
-#                 context=context,
-#                 questions=quiz_data['questions'],
-#                 time_limit=quiz_data.get('timeLimit', 600)
-#             )
-            
-#             response_data = {
-#                 'id': quiz.id,
-#                 'title': quiz_data['title'],
-#                 'timeLimit': quiz_data['timeLimit'],
-#                 'questions': [
-#                     {
-#                         'text': q['text'],
-#                         'options': q['options']
-#                     } for q in quiz_data['questions']
-#                 ]
-#             }
-#             return JsonResponse(response_data)
-            
-#         except Exception as e:
-#             print(f"Database error: {str(e)}")
-#             return JsonResponse({'error': 'Failed to save quiz'}, status=500)
-            
-#     except json.JSONDecodeError:
-#         return JsonResponse({'error': 'Invalid JSON in request'}, status=400)
-#     except Exception as e:
-#         print(f"Unexpected error: {str(e)}")
-#         return JsonResponse({'error': str(e)}, status=500)
-
-
-# def quiz_home(request):
-#     """Render the quiz generator template"""
-#     return render(request, 'core/quiz_generator.html')  # Updated template path
-
-
-# @csrf_exempt
-# def submit_quiz(request):
-#     """Handle quiz submission and scoring"""
-#     if request.method != 'POST':
-#         return JsonResponse({'error': 'Method not allowed'}, status=405)
+    documents = Document.objects.filter(user=request.user)
     
-#     try:
-#         data = json.loads(request.body)
-#         quiz_id = data.get('quizId')
-#         answers = data.get('answers', [])
+    return render(request, 'core/home.html', {
+        'active_sessions': active_sessions,
+        'documents': documents
+    })
+
+@login_required
+def create_chat_session(request):
+    """Create a new PDF chat session."""
+    if request.method != 'POST':
+        return JsonResponse({'error': 'Method not allowed'}, status=405)
+    
+    try:
+        data = json.loads(request.body)
+        document_id = data.get('document_id')
         
-#         if not quiz_id:
-#             return JsonResponse({'error': 'Quiz ID is required'}, status=400)
+        if not document_id:
+            return JsonResponse({'error': 'Document ID is required'}, status=400)
         
-#         try:
-#             quiz = Quiz.objects.get(id=quiz_id)
-#         except Quiz.DoesNotExist:
-#             return JsonResponse({'error': 'Quiz not found'}, status=404)
+        # Get the document and verify ownership
+        document = get_object_or_404(Document, id=document_id, user=request.user)
         
-#         correct_answers = 0
-#         total_questions = len(quiz.questions)
+        # Create new chat session
+        session = PDFChatSession.objects.create(
+            user=request.user,
+            pdf_document=document,
+            is_active=True
+        )
         
-#         # Calculate score
-#         for answer in answers:
-#             question_idx = answer.get('questionIndex')
-#             selected_option = answer.get('selectedOption')
-                
-#             if question_idx < total_questions:
-#                 correct_option = quiz.questions[question_idx].get('correctOption')
-#                 if correct_option is not None and selected_option == correct_option:
-#                     correct_answers += 1
+        # Return the redirect URL using the URL pattern name
+        return JsonResponse({
+            'session_id': session.id,
+            'redirect_url': request.build_absolute_uri(
+                reverse('chat_session', kwargs={'session_id': session.id})
+            )
+        })
         
-#         score = (correct_answers / total_questions) * 100 if total_questions > 0 else 0
+    except json.JSONDecodeError:
+        return JsonResponse({'error': 'Invalid JSON data'}, status=400)
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
+
+@login_required
+def chat_session(request, session_id):
+    """Handle individual chat sessions."""
+    session = get_object_or_404(PDFChatSession, id=session_id, user=request.user)
+    messages = ChatMessage.objects.filter(session=session)
+    
+    return render(request, 'core/session.html', {
+        'session': session,
+        'messages': messages,
+        'document': session.pdf_document
+    })
+
+@login_required
+def send_message(request, session_id):
+    """Handle sending and receiving chat messages."""
+    if request.method != 'POST':
+        return JsonResponse({'error': 'Method not allowed'}, status=405)
+    
+    try:
+        session = get_object_or_404(PDFChatSession, id=session_id, user=request.user)
+        data = json.loads(request.body)
+        user_message = data.get('message', '').strip()
         
-#         # Save attempt
-#         try:
-#             attempt = QuizAttempt.objects.create(
-#                 quiz=quiz,
-#                 user=request.user if request.user.is_authenticated else None,
-#                 score=score,
-#                 answers=answers
-#             )
-#         except Exception as e:
-#             print("Error saving quiz attempt:", str(e))
-#             return JsonResponse({'error': 'Failed to save quiz attempt'}, status=500)
+        if not user_message:
+            return JsonResponse({'error': 'Message is required'}, status=400)
         
-#         return JsonResponse({
-#             'score': score,
-#             'correctAnswers': correct_answers,
-#             'totalQuestions': total_questions,
-#             'explanations': [q.get('explanation', '') for q in quiz.questions]
-#         })
+        # Store user message
+        ChatMessage.objects.create(
+            session=session,
+            sender='USER',
+            message=user_message
+        )
         
-#     except json.JSONDecodeError:
-#         return JsonResponse({'error': 'Invalid JSON'}, status=400)
-#     except Exception as e:
-#         print("Error in submit_quiz view:", str(e))
-#         return JsonResponse({'error': str(e)}, status=500)
+        # Process message with LLaMa
+        try:
+            ai_response, is_relevant = process_with_llama(user_message, session)
+            # Convert bool to int for JSON serialization
+            is_relevant_int = 1 if is_relevant else 0
+        except Exception as llama_error:
+            print(f"LLaMA processing error: {str(llama_error)}")
+            import traceback
+            print(f"Traceback: {traceback.format_exc()}")
+            ai_response = "I apologize, but I encountered an error processing your message. Please try again."
+            is_relevant_int = 0
+        
+        # Store AI response
+        ai_message = ChatMessage.objects.create(
+            session=session,
+            sender='AI',
+            message=ai_response,
+            is_context_relevant=bool(is_relevant_int)  # Convert back to bool for database
+        )
+        
+        return JsonResponse({
+            'response': ai_response,
+            'is_relevant': is_relevant_int,  # Send as int
+            'timestamp': ai_message.timestamp.isoformat()
+        })
+        
+    except Exception as e:
+        print(f"Detailed error in send_message: {str(e)}")
+        import traceback
+        print(f"Traceback: {traceback.format_exc()}")
+        return JsonResponse({'error': str(e)}, status=500)
+
+from .llama_integration import process_with_llama
+
+@login_required
+def send_message(request, session_id):
+    """Handle sending and receiving chat messages."""
+    if request.method != 'POST':
+        return JsonResponse({'error': 'Method not allowed'}, status=405)
+    
+    try:
+        session = get_object_or_404(PDFChatSession, id=session_id, user=request.user)
+        print(f"PDF document path: {session.pdf_document.file.path}")
+        print(f"PDF document exists: {os.path.exists(session.pdf_document.file.path)}")
+        
+        data = json.loads(request.body)
+        user_message = data.get('message', '').strip()
+        
+        if not user_message:
+            return JsonResponse({'error': 'Message is required'}, status=400)
+        
+        # Store user message
+        ChatMessage.objects.create(
+            session=session,
+            sender='USER',
+            message=user_message
+        )
+        
+        try:
+            # Process message with LLaMa
+            ai_response, is_relevant = process_with_llama(user_message, session)
+            # Convert bool to int for JSON serialization
+            is_relevant_int = 1 if is_relevant else 0
+        except Exception as llama_error:
+            print(f"LLaMA processing error: {str(llama_error)}")
+            import traceback
+            print(f"Traceback: {traceback.format_exc()}")
+            ai_response = "I apologize, but I encountered an error processing your message. Please try again."
+            is_relevant_int = 0
+        
+        # Store AI response
+        ai_message = ChatMessage.objects.create(
+            session=session,
+            sender='AI',
+            message=ai_response,
+            is_context_relevant=bool(is_relevant_int)
+        )
+        
+        # Ensure all values are JSON serializable
+        response_data = {
+            'response': str(ai_response),  # Convert to string to ensure serializable
+            'is_relevant': int(is_relevant_int),  # Use integer instead of boolean
+            'timestamp': ai_message.timestamp.isoformat()  # Convert datetime to ISO format string
+        }
+        
+        return JsonResponse(response_data)
+        
+    except Exception as e:
+        print(f"Detailed error in send_message: {str(e)}")
+        import traceback
+        print(f"Traceback: {traceback.format_exc()}")
+        return JsonResponse({'error': str(e)}, status=500)
+    
+@login_required
+def end_chat_session(request, session_id):
+    if request.method == 'POST':
+        session = get_object_or_404(PDFChatSession, id=session_id, user=request.user)
+        session.is_active = False
+        session.save()
+        return JsonResponse({'status': 'success'})
+    return JsonResponse({'error': 'Method not allowed'}, status=405)

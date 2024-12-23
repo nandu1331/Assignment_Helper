@@ -70,6 +70,8 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'assignment_helper.wsgi.application'
 
+X_FRAME_OPTIONS = 'SAMEORIGIN'
+
 
 # Database
 # https://docs.djangoproject.com/en/5.1/ref/settings/#databases

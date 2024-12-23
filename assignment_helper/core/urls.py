@@ -25,6 +25,12 @@ urlpatterns = [
     path('quiz/attempt/<int:quiz_id>/', views.attempt_quiz, name='attempt_quiz'),
     path('quiz/results/<int:quiz_id>/', views.quiz_results, name='quiz_results'),
     path('quiz/history/', views.quiz_history, name='quiz_history'),
+
+    path('pdf-chat/', views.pdf_chat_home, name='pdf_chat_home'),
+    path('pdf-chat/create/', views.create_chat_session, name='create_chat_session'),
+    path('pdf-chat/<int:session_id>/', views.chat_session, name='chat_session'),
+    path('pdf-chat/<int:session_id>/end/', views.end_chat_session, name='end_chat_session'),
+    path('pdf-chat/<int:session_id>/send/', views.send_message, name='send_message'),
 ]
 
 if settings.DEBUG:

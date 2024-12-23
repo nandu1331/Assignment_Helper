@@ -1,0 +1,324 @@
+{% extends 'core/base.html' %}
+{% load static %}
+
+{% block extra_css %}
+<style>
+    :root {
+        --primary-color: #7C3AFF;
+        --secondary-color: #6B5B9A;
+        --text-color: #333333;
+        --background-color: #302e2e;
+        --border-color: #dee2e6;
+        --button-hover-color: #480ebc;
+        --transition-speed: 0.3s;
+        --message-bg-user: var(--primary-color);
+        --message-bg-ai: #303132;
+    }
+
+    .container-fluid {
+        padding: 2rem;
+        animation: fadeIn 0.5s ease-in;
+    }
+
+    @keyframes fadeIn {
+        from { opacity: 0; }
+        to { opacity: 1; }
+    }
+
+    .page-header {
+        text-align: center;
+        margin-bottom: 2rem;
+    }
+
+    .page-title {
+        font-size: 2.5rem;
+        color: var(--primary-color);
+        font-weight: 600;
+        margin-bottom: 1rem;
+        animation: slideDown 0.5s ease-out;
+    }
+
+    @keyframes slideDown {
+        from {
+            transform: translateY(-20px);
+            opacity: 0;
+        }
+        to {
+            transform: translateY(0);
+            opacity: 1;
+        }
+    }
+
+    .session-card {
+        background: #2f2f31;
+        background-image: radial-gradient(circle, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+        border-radius: 12px;
+        background-size: 12px 12px;
+        border: none;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        transition: transform var(--transition-speed), box-shadow var(--transition-speed);
+        animation: cardAppear 0.5s ease-out;
+        animation-fill-mode: both;
+    }
+
+    .session-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+    }
+
+    @keyframes cardAppear {
+        from {
+            opacity: 0;
+            transform: translateY(20px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    .card-body {
+        padding: 1.5rem;
+    }
+
+    .card-title {
+        color: var(--primary-color);
+        font-size: 1.25rem;
+        font-weight: 500;
+        margin-bottom: 1rem;
+    }
+
+    .new-chat-btn {
+        background-color: var(--primary-color);
+        color: white;
+        padding: 0.75rem 1.5rem;
+        border-radius: 8px;
+        border: none;
+        transition: transform var(--transition-speed), background-color var(--transition-speed);
+    }
+
+    .new-chat-btn:hover {
+        background-color: var(--button-hover-color);
+        transform: translateY(-2px);
+    }
+
+    .continue-chat-btn {
+        background-color: var(--primary-color);
+        color: white;
+        border: none;
+        padding: 0.5rem 1rem;
+        border-radius: 6px;
+        transition: all var(--transition-speed);
+        text-decoration: none;
+    }
+
+    .continue-chat-btn:hover {
+        background-color: var(--button-hover-color);
+        transform: scale(1.05);
+        color: white;
+    }
+
+    .end-session-btn {
+        background-color: #dc3545;
+        color: white;
+        border: none;
+        padding: 0.4rem 0.8rem;
+        border-radius: 6px;
+        font-size: 0.9rem;
+        transition: all var(--transition-speed);
+    }
+
+    .end-session-btn:hover {
+        background-color: #c82333;
+        transform: scale(1.05);
+    }
+
+    .modal-content {
+        border-radius: 12px;
+        border: none;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+    }
+
+    .modal-header {
+        background-color: var(--primary-color);
+        color: white;
+        border-radius: 12px 12px 0 0;
+    }
+
+    .modal-title {
+        font-weight: 500;
+    }
+
+    .form-select {
+        border-radius: 8px;
+        padding: 0.75rem;
+        border-color: var(--border-color);
+        transition: border-color var(--transition-speed);
+    }
+
+    .form-select:focus {
+        border-color: var(--primary-color);
+        box-shadow: 0 0 0 0.2rem rgba(124, 58, 255, 0.25);
+    }
+
+    .alert-info {
+        border-radius: 8px;
+        background-color: #e3f2fd;
+        border-color: #90caf9;
+        color: #0c5460;
+        animation: fadeIn 0.5s ease-in;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<nav class="nav">
+    <a href="{% url 'index' %}">Home</a>
+    <a href="{% url 'upload_pdf' %}">Upload Files</a>
+    <a href="{% url 'pdf_chat_home' %}">Chat with PDFs</a>
+    <a href="{% url 'saved_files' %}">Your Work</a>
+    <a href="{% url 'quiz_home' %}">Quiz Section</a>
+    {% if user.is_authenticated %}
+    <a href="{% url 'log_out' %}" class="nav-br-buttons">Logout</a>
+    {% endif %}
+</nav>
+<div class="container-fluid">
+    <div class="page-header">
+        <h1 class="page-title">PDF Chat Sessions</h1>
+        <button type="button" class="new-chat-btn" data-bs-toggle="modal" data-bs-target="#newChatModal">
+            <i class="fas fa-plus-circle me-2"></i>New Chat Session
+        </button>
+    </div>
+
+    <div class="row">
+        {% if active_sessions %}
+            {% for session in active_sessions %}
+            <div class="col-md-6 col-lg-4 mb-4">
+                <div class="card session-card" style="--delay: {{ forloop.counter0 }}">
+                    <div class="card-body">
+                        <h5 class="card-title">{{ session.pdf_document.name }}</h5>
+                        <p class="card-text">
+                            <small class="text-muted">
+                                <i class="far fa-clock me-1"></i>
+                                Last active: {{ session.last_activity|timesince }} ago
+                            </small>
+                        </p>
+                        <div class="d-flex justify-content-between align-items-center">
+                            <a href="{% url 'chat_session' session.id %}" class="continue-chat-btn">
+                                <i class="fas fa-comments me-1"></i>Continue Chat
+                            </a>
+                            <button class="end-session-btn" onclick="endSession('{{ session.id }}')">
+                                <i class="fas fa-times me-1"></i>End Session
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        {% else %}
+            <div class="col">
+                <div class="alert alert-info">
+                    <i me-2"></i>
+                    No active chat sessions. Start a new one by clicking the "New Chat Session" button.
+                </div>
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- New Chat Modal -->
+<div class="modal fade" id="newChatModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="fas fa-plus-circle me-2"></i>Start New Chat Session
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="newChatForm">
+                    {% csrf_token %}
+                    <div class="mb-3">
+                        <label class="form-label">Select PDF Document</label>
+                        <select class="form-select" name="document_id" required>
+                            <option value="">Choose a document...</option>
+                            {% for doc in documents %}
+                            <option value="{{ doc.id }}">{{ doc.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="createChatSession()">Start Chat</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function createChatSession() {
+    const form = document.getElementById('newChatForm');
+    const formData = new FormData(form);
+    const documentId = formData.get('document_id');
+    
+    if (!documentId) {
+        alert('Please select a document');
+        return;
+    }
+    
+    fetch('{% url "create_chat_session" %}', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': '{{ csrf_token }}'
+        },
+        body: JSON.stringify({
+            document_id: documentId
+        })
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error('Network response was not ok');
+        }
+        return response.json();
+    })
+    .then(data => {
+        if (data.redirect_url) {
+            window.location.href = data.redirect_url;
+        } else {
+            throw new Error('No redirect URL provided');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Failed to create chat session: ' + error.message);
+    });
+}
+
+function endSession(sessionId) {
+    if (confirm('Are you sure you want to end this chat session?')) {
+        fetch(`/pdf-chat/${sessionId}/end/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': '{{ csrf_token }}'
+            }
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Network response was not ok');
+            }
+            window.location.reload();
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Failed to end session: ' + error.message);
+        });
+    }
+}
+</script>
+{% endblock %}
